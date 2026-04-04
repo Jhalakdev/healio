@@ -66,7 +66,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
       localStorage.setItem("token", data.accessToken);
-      router.push("/admin/dashboard");
+      router.push("/doctor/dashboard");
     } catch (e: any) {
       setError(e.message);
     }
@@ -194,7 +194,7 @@ export default function LoginPage() {
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     type="password"
-                    placeholder="Password"
+                    placeholder="doctor123"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-11"
@@ -210,7 +210,7 @@ export default function LoginPage() {
           )}
 
           <p className="text-center text-xs text-slate-400 mt-6">
-            Admin: admin@healio.in / admin123
+            {tab === "admin" ? "Admin: admin@healio.in / admin123" : "Doctor: doctor@healio.in / doctor123"}
           </p>
         </div>
       </div>
