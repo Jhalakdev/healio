@@ -304,42 +304,91 @@ async function main() {
   }
   console.log('✅ 14 symptoms created and linked to specialists');
 
-  // Create lab provider + tests
+  // Create lab provider + health packages
   const provider = await prisma.labProvider.upsert({
     where: { name: 'BlinkCure Labs' },
     update: {},
-    create: {
-      name: 'BlinkCure Labs',
-      isActive: true,
-      commission: 0,
-    },
+    create: { name: 'BlinkCure Labs', isActive: true, commission: 0 },
   });
 
-  const labTests = [
-    { name: 'Complete Blood Count (CBC)', category: 'Blood Test', mrp: 500, sellingPrice: 299, costPrice: 150, turnaround: '6 hours', fasting: false },
-    { name: 'Thyroid Profile (T3, T4, TSH)', category: 'Thyroid', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '24 hours', fasting: false },
-    { name: 'Lipid Profile', category: 'Blood Test', mrp: 600, sellingPrice: 349, costPrice: 150, turnaround: '12 hours', fasting: true },
-    { name: 'Liver Function Test (LFT)', category: 'Blood Test', mrp: 700, sellingPrice: 399, costPrice: 180, turnaround: '24 hours', fasting: true },
-    { name: 'Kidney Function Test (KFT)', category: 'Blood Test', mrp: 650, sellingPrice: 379, costPrice: 170, turnaround: '24 hours', fasting: false },
-    { name: 'HbA1c (Diabetes)', category: 'Diabetes', mrp: 500, sellingPrice: 299, costPrice: 120, turnaround: '12 hours', fasting: false },
-    { name: 'Vitamin D', category: 'Vitamin', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '24 hours', fasting: false },
-    { name: 'Vitamin B12', category: 'Vitamin', mrp: 700, sellingPrice: 399, costPrice: 180, turnaround: '24 hours', fasting: false },
-    { name: 'Iron Studies', category: 'Blood Test', mrp: 600, sellingPrice: 349, costPrice: 150, turnaround: '24 hours', fasting: true },
-    { name: 'Urine Routine', category: 'Urine Test', mrp: 200, sellingPrice: 149, costPrice: 60, turnaround: '6 hours', fasting: false },
-    // Packages
-    { name: 'Basic Health Checkup', category: 'Full Body Checkup', mrp: 1500, sellingPrice: 799, costPrice: 350, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid Profile', 'LFT', 'KFT', 'Urine Routine'] },
-    { name: 'Comprehensive Health Checkup', category: 'Full Body Checkup', mrp: 3500, sellingPrice: 1999, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'Vitamin D', 'B12', 'Iron'] },
-    { name: 'Women Health Package', category: 'Full Body Checkup', mrp: 4000, sellingPrice: 2499, costPrice: 1000, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Thyroid', 'Iron', 'Vitamin D', 'B12', 'Calcium', 'Hormones'] },
-    { name: 'Senior Citizen Package', category: 'Full Body Checkup', mrp: 5000, sellingPrice: 2999, costPrice: 1200, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'ECG', 'Urine'] },
-    { name: 'Cancer Screening (Male)', category: 'Cancer Screening', mrp: 8000, sellingPrice: 4999, costPrice: 2500, turnaround: '72 hours', fasting: true, isPackage: true, testsIncluded: ['PSA', 'CEA', 'AFP', 'CA 19-9', 'CBC'] },
-    { name: 'Cancer Screening (Female)', category: 'Cancer Screening', mrp: 8000, sellingPrice: 4999, costPrice: 2500, turnaround: '72 hours', fasting: true, isPackage: true, testsIncluded: ['CA 125', 'CEA', 'AFP', 'CA 15-3', 'CBC'] },
-    { name: 'Allergy Panel (30 Allergens)', category: 'Allergy', mrp: 6000, sellingPrice: 3499, costPrice: 1800, turnaround: '72 hours', fasting: false, isPackage: true, testsIncluded: ['Food allergens', 'Dust', 'Pollen', 'Pet dander'] },
-    { name: 'Fertility Panel (Male)', category: 'Fertility', mrp: 3000, sellingPrice: 1799, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['Testosterone', 'FSH', 'LH', 'Prolactin', 'Semen Analysis'] },
-    { name: 'Fertility Panel (Female)', category: 'Fertility', mrp: 3500, sellingPrice: 1999, costPrice: 900, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['FSH', 'LH', 'Estradiol', 'Prolactin', 'AMH', 'Thyroid'] },
-    { name: 'COVID-19 RT-PCR', category: 'Infection', mrp: 500, sellingPrice: 299, costPrice: 100, turnaround: '24 hours', fasting: false },
+  const healthPackages: { name: string; category: string; mrp: number; sellingPrice: number; costPrice: number; turnaround: string; fasting: boolean; isPackage?: boolean; testsIncluded?: string[]; description?: string }[] = [
+    // ─── Anemia Profiles
+    { name: 'Anemia Profile Basic', category: 'Anemia Profiles', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '12 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Iron', 'Ferritin', 'TIBC'], description: 'Check for iron deficiency and anemia' },
+    { name: 'Anemia Profile Advanced', category: 'Anemia Profiles', mrp: 1500, sellingPrice: 849, costPrice: 400, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Iron', 'Ferritin', 'TIBC', 'Vitamin B12', 'Folic Acid', 'Reticulocyte Count'] },
+    // ─── Cardiac Profiles
+    { name: 'Cardiac Risk Profile', category: 'Cardiac Profiles', mrp: 2500, sellingPrice: 1499, costPrice: 600, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['Lipid Profile', 'hs-CRP', 'Homocysteine', 'Apolipoprotein A1/B'] },
+    { name: 'Heart Health Checkup', category: 'Cardiac Profiles', mrp: 3500, sellingPrice: 1999, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['Lipid Profile', 'ECG', 'Troponin I', 'BNP', 'hs-CRP', 'HbA1c'] },
+    // ─── Fever & Infection
+    { name: 'Fever Panel Basic', category: 'Fever & Infection Screening', mrp: 1200, sellingPrice: 699, costPrice: 300, turnaround: '12 hours', fasting: false, isPackage: true, testsIncluded: ['CBC', 'Malaria', 'Typhoid (Widal)', 'Dengue NS1', 'Urine Routine'] },
+    { name: 'Fever Panel Advanced', category: 'Fever & Infection Screening', mrp: 2500, sellingPrice: 1399, costPrice: 600, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['CBC', 'Malaria', 'Typhoid', 'Dengue', 'Chikungunya', 'CRP', 'Blood Culture', 'ESR'] },
+    // ─── Infertility Profiles
+    { name: 'Fertility Panel (Female)', category: 'Infertility Profiles', mrp: 3500, sellingPrice: 1999, costPrice: 900, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['FSH', 'LH', 'Estradiol', 'Prolactin', 'AMH', 'Thyroid'] },
+    { name: 'Fertility Panel (Male)', category: 'Infertility Profiles', mrp: 3000, sellingPrice: 1799, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['Testosterone', 'FSH', 'LH', 'Prolactin', 'Semen Analysis'] },
+    // ─── Pregnancy & Parental
+    { name: 'Pregnancy Screening Package', category: 'Pregnancy & Parental Screening', mrp: 4000, sellingPrice: 2299, costPrice: 1000, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Blood Group', 'HIV', 'HBsAg', 'VDRL', 'Rubella IgG', 'TSH', 'Urine'] },
+    // ─── Diabetic Profiles
+    { name: 'Diabetes Screening', category: 'Diabetic Profiles', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '12 hours', fasting: true, isPackage: true, testsIncluded: ['Fasting Glucose', 'HbA1c', 'Post Prandial Glucose'] },
+    { name: 'Diabetes Monitoring Package', category: 'Diabetic Profiles', mrp: 2000, sellingPrice: 1149, costPrice: 500, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['HbA1c', 'Fasting Glucose', 'Lipid Profile', 'KFT', 'Urine Microalbumin'] },
+    // ─── Thyroid
+    { name: 'Thyroid Profile (T3, T4, TSH)', category: 'Thyroid Test Packages', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '12 hours', fasting: false },
+    { name: 'Thyroid Complete Panel', category: 'Thyroid Test Packages', mrp: 1500, sellingPrice: 849, costPrice: 400, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['T3', 'T4', 'TSH', 'Free T3', 'Free T4', 'Anti-TPO'] },
+    // ─── Vitamin
+    { name: 'Vitamin D', category: 'Vitamin Test Packages', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '24 hours', fasting: false },
+    { name: 'Vitamin B12', category: 'Vitamin Test Packages', mrp: 700, sellingPrice: 399, costPrice: 180, turnaround: '24 hours', fasting: false },
+    { name: 'Complete Vitamin Panel', category: 'Vitamin Test Packages', mrp: 2500, sellingPrice: 1399, costPrice: 600, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['Vitamin D', 'B12', 'B1', 'B6', 'Folic Acid', 'Iron'] },
+    // ─── Arthritis
+    { name: 'Arthritis Profile', category: 'Arthritis Profile Packages', mrp: 2000, sellingPrice: 1149, costPrice: 500, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['RA Factor', 'Anti-CCP', 'Uric Acid', 'CRP', 'ESR', 'ANA'] },
+    // ─── Cancer & Tumor
+    { name: 'Cancer Screening (Male)', category: 'Cancer & Tumor Screening', mrp: 8000, sellingPrice: 4999, costPrice: 2500, turnaround: '72 hours', fasting: true, isPackage: true, testsIncluded: ['PSA', 'CEA', 'AFP', 'CA 19-9', 'CBC'] },
+    { name: 'Cancer Screening (Female)', category: 'Cancer & Tumor Screening', mrp: 8000, sellingPrice: 4999, costPrice: 2500, turnaround: '72 hours', fasting: true, isPackage: true, testsIncluded: ['CA 125', 'CEA', 'AFP', 'CA 15-3', 'CBC', 'PAP Smear'] },
+    // ─── Detox & Lifestyle
+    { name: 'Liver & Kidney Detox Panel', category: 'Detox & Lifestyle Impact', mrp: 1800, sellingPrice: 999, costPrice: 450, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['LFT', 'KFT', 'GGT', 'Uric Acid', 'Electrolytes'] },
+    // ─── Gut & Food Intolerance
+    { name: 'Food Intolerance Panel (40 Foods)', category: 'Gut & Food Intolerance', mrp: 5000, sellingPrice: 2999, costPrice: 1500, turnaround: '72 hours', fasting: false, isPackage: true, testsIncluded: ['IgG antibodies for 40 food items'] },
+    // ─── Skin Care
+    { name: 'Skin Health Checkup', category: 'Skin Care Checkup Packages', mrp: 2000, sellingPrice: 1199, costPrice: 500, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['Vitamin D', 'B12', 'Iron', 'Thyroid', 'Zinc', 'ANA'] },
+    // ─── Hair Fall
+    { name: 'Hair Fall Profile', category: 'Hair Fall Packages', mrp: 2500, sellingPrice: 1399, costPrice: 600, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['Iron', 'Ferritin', 'Vitamin D', 'B12', 'Thyroid', 'Zinc', 'Biotin'] },
+    // ─── Allergy
+    { name: 'Allergy Panel (30 Allergens)', category: 'Allergy Packages', mrp: 6000, sellingPrice: 3499, costPrice: 1800, turnaround: '72 hours', fasting: false, isPackage: true, testsIncluded: ['Food allergens', 'Dust', 'Pollen', 'Pet dander', 'Mold'] },
+    // ─── Full Body Checkup
+    { name: 'Basic Full Body Checkup', category: 'Full Body Checkup', mrp: 1500, sellingPrice: 799, costPrice: 350, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid Profile', 'LFT', 'KFT', 'Urine Routine', 'Blood Sugar'] },
+    { name: 'Comprehensive Full Body Checkup', category: 'Full Body Checkup', mrp: 3500, sellingPrice: 1999, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'Vitamin D', 'B12', 'Iron', 'Urine'] },
+    { name: 'Premium Full Body Checkup', category: 'Full Body Checkup', mrp: 6000, sellingPrice: 3499, costPrice: 1500, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'Vitamin D', 'B12', 'Iron', 'Calcium', 'Cardiac markers', 'Cancer markers'] },
+    // ─── Hormonal & Metabolic
+    { name: 'Hormonal Imbalance Panel (Female)', category: 'Hormonal & Metabolic Packages', mrp: 3000, sellingPrice: 1799, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['FSH', 'LH', 'Estradiol', 'Progesterone', 'Testosterone', 'DHEA-S', 'Cortisol'] },
+    { name: 'Metabolic Syndrome Panel', category: 'Hormonal & Metabolic Packages', mrp: 2500, sellingPrice: 1399, costPrice: 600, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['Fasting Glucose', 'HbA1c', 'Lipid Profile', 'Insulin', 'HOMA-IR'] },
+    // ─── Immunity
+    { name: 'Immunity Health Checkup', category: 'Immunity & Immune Health', mrp: 2000, sellingPrice: 1199, costPrice: 500, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['CBC', 'Vitamin D', 'Vitamin C', 'Zinc', 'Iron', 'CRP'] },
+    // ─── PCOD/PCOS
+    { name: 'PCOD/PCOS Panel', category: 'PCOD & PCOS Packages', mrp: 3500, sellingPrice: 1999, costPrice: 900, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['FSH', 'LH', 'Testosterone', 'DHEA-S', 'Insulin', 'Thyroid', 'HbA1c'] },
+    // ─── Senior Citizen
+    { name: 'Senior Citizen Basic', category: 'Senior Citizen Packages', mrp: 3000, sellingPrice: 1799, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'Blood Sugar', 'Urine'] },
+    { name: 'Senior Citizen Comprehensive', category: 'Senior Citizen Packages', mrp: 5000, sellingPrice: 2999, costPrice: 1200, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'Vitamin D', 'B12', 'PSA/CA125', 'ECG'] },
+    // ─── Sports & Fitness
+    { name: 'Sports & Fitness Panel', category: 'Sports & Fitness', mrp: 2500, sellingPrice: 1499, costPrice: 700, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Iron', 'Vitamin D', 'B12', 'Electrolytes', 'CK', 'Testosterone', 'Cortisol'] },
+    // ─── STD & Sexual Health
+    { name: 'STD Screening Basic', category: 'STD & Sexual Health', mrp: 2000, sellingPrice: 1199, costPrice: 500, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['HIV', 'HBsAg', 'HCV', 'VDRL', 'Herpes HSV 1&2'] },
+    { name: 'STD Comprehensive Panel', category: 'STD & Sexual Health', mrp: 4000, sellingPrice: 2499, costPrice: 1000, turnaround: '48 hours', fasting: false, isPackage: true, testsIncluded: ['HIV', 'HBsAg', 'HCV', 'VDRL', 'Herpes', 'Chlamydia', 'Gonorrhea', 'HPV'] },
+    // ─── Drug & Toxicology
+    { name: 'Drug Screening (5 Panel)', category: 'Drug & Toxicology Screening', mrp: 2000, sellingPrice: 1199, costPrice: 500, turnaround: '24 hours', fasting: false, isPackage: true, testsIncluded: ['Marijuana', 'Cocaine', 'Opiates', 'Amphetamines', 'Benzodiazepines'] },
+    { name: 'Drug Screening (10 Panel)', category: 'Drug & Toxicology Screening', mrp: 3500, sellingPrice: 1999, costPrice: 900, turnaround: '48 hours', fasting: false, isPackage: true, testsIncluded: ['10 substance panel including Barbiturates, Methadone, PCP, Propoxyphene'] },
+    // ─── Preoperative
+    { name: 'Pre-Surgery Panel', category: 'Preoperative Packages', mrp: 2500, sellingPrice: 1499, costPrice: 700, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'PT/INR', 'Blood Group', 'HIV', 'HBsAg', 'HCV', 'Blood Sugar', 'KFT', 'LFT', 'Chest X-ray'] },
+    // ─── Individual Tests
+    { name: 'Complete Blood Count (CBC)', category: 'Individual Tests', mrp: 500, sellingPrice: 299, costPrice: 150, turnaround: '6 hours', fasting: false },
+    { name: 'Lipid Profile', category: 'Individual Tests', mrp: 600, sellingPrice: 349, costPrice: 150, turnaround: '12 hours', fasting: true },
+    { name: 'Liver Function Test (LFT)', category: 'Individual Tests', mrp: 700, sellingPrice: 399, costPrice: 180, turnaround: '24 hours', fasting: true },
+    { name: 'Kidney Function Test (KFT)', category: 'Individual Tests', mrp: 650, sellingPrice: 379, costPrice: 170, turnaround: '24 hours', fasting: false },
+    { name: 'HbA1c (Diabetes)', category: 'Individual Tests', mrp: 500, sellingPrice: 299, costPrice: 120, turnaround: '12 hours', fasting: false },
+    { name: 'Urine Routine', category: 'Individual Tests', mrp: 200, sellingPrice: 149, costPrice: 60, turnaround: '6 hours', fasting: false },
+    { name: 'Blood Group & Rh Type', category: 'Individual Tests', mrp: 200, sellingPrice: 99, costPrice: 40, turnaround: '6 hours', fasting: false },
+    { name: 'COVID-19 RT-PCR', category: 'Individual Tests', mrp: 500, sellingPrice: 299, costPrice: 100, turnaround: '24 hours', fasting: false },
+    { name: 'ESR (Erythrocyte Sedimentation Rate)', category: 'Individual Tests', mrp: 200, sellingPrice: 149, costPrice: 50, turnaround: '6 hours', fasting: false },
+    { name: 'CRP (C-Reactive Protein)', category: 'Individual Tests', mrp: 500, sellingPrice: 299, costPrice: 120, turnaround: '12 hours', fasting: false },
   ];
 
-  for (const test of labTests) {
+  for (const test of healthPackages) {
     const existing = await prisma.labTest.findFirst({ where: { name: test.name, providerId: provider.id } });
     if (!existing) {
       await prisma.labTest.create({
@@ -347,19 +396,20 @@ async function main() {
           providerId: provider.id,
           name: test.name,
           category: test.category,
+          description: test.description,
           mrp: test.mrp,
           sellingPrice: test.sellingPrice,
           costPrice: test.costPrice,
           turnaround: test.turnaround,
           fasting: test.fasting,
           homeCollection: true,
-          isPackage: (test as any).isPackage || false,
-          testsIncluded: (test as any).testsIncluded || [],
+          isPackage: test.isPackage || false,
+          testsIncluded: test.testsIncluded || [],
         },
       });
     }
   }
-  console.log('✅ 20 lab tests + 1 provider created');
+  console.log('✅ 47 health packages + tests created across 20 categories');
 
   // Set default app configs
   const configs = [
