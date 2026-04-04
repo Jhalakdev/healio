@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Search, CheckCircle, XCircle, Ban, FileText, Shield, Eye, Save,
   ChevronDown, ChevronUp, Phone, Mail, Calendar, CreditCard, Star,
-  Stethoscope, Clock, Users, IndianRupee,
+  Stethoscope, Clock, Users, IndianRupee, AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export default function AdminDoctorsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [docs, setDocs] = useState<any[]>([]);
   const [editingPrice, setEditingPrice] = useState<{ id: string; price: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => { loadDoctors(); }, []);
 
@@ -56,10 +57,12 @@ export default function AdminDoctorsPage() {
     APPROVED: "success", PENDING: "warning", REJECTED: "destructive", SUSPENDED: "destructive",
   };
 
-  const filtered = doctors.filter(
-    (d) => !filter || d.name?.toLowerCase().includes(filter.toLowerCase()) ||
-      (d.specialization || "").toLowerCase().includes(filter.toLowerCase())
-  );
+  const filtered = doctors.filter((d) => {
+    const matchesSearch = !filter || d.name?.toLowerCase().includes(filter.toLowerCase()) ||
+      (d.specialization || "").toLowerCase().includes(filter.toLowerCase());
+    const matchesStatus = statusFilter === "ALL" || d.verificationStatus === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -73,10 +76,63 @@ export default function AdminDoctorsPage() {
         </div>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input placeholder="Search by name or specialization..." value={filter} onChange={(e) => setFilter(e.target.value)} className="pl-10" />
+      <div className="flex gap-3 items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input placeholder="Search by name or specialization..." value={filter} onChange={(e) => setFilter(e.target.value)} className="pl-10" />
+        </div>
+        <div className="flex gap-2">
+          {["ALL", "PENDING", "APPROVED", "SUSPENDED", "REJECTED"].map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={statusFilter === s ? "default" : "outline"}
+              onClick={() => setStatusFilter(s)}
+              className={s === "PENDING" && doctors.filter(d => d.verificationStatus === "PENDING").length > 0 ? "animate-pulse" : ""}
+            >
+              {s === "PENDING" && doctors.filter(d => d.verificationStatus === "PENDING").length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 mr-1" />
+              )}
+              {s} {s !== "ALL" && `(${doctors.filter(d => d.verificationStatus === s).length})`}
+            </Button>
+          ))}
+        </div>
       </div>
+
+      {/* PENDING APPROVALS — highlighted section */}
+      {doctors.filter(d => d.verificationStatus === "PENDING").length > 0 && statusFilter === "ALL" && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-400">
+              <Clock className="w-5 h-5" /> New Doctor Applications — Awaiting Approval
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {doctors.filter(d => d.verificationStatus === "PENDING").map((doc) => (
+                <div key={doc.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/5">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                    {doc.name?.[0]}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold">{doc.name}</p>
+                    <p className="text-xs text-slate-500">{doc.user?.email} · {doc.specialization || "No spec"} · Applied {new Date(doc.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => toggleExpand(doc.id)}>
+                    <FileText className="w-3 h-3" /> Review Documents
+                  </Button>
+                  <Button size="sm" onClick={() => updateStatus(doc.id, "APPROVED")}>
+                    <CheckCircle className="w-3 h-3" /> Approve
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => updateStatus(doc.id, "REJECTED")}>
+                    <XCircle className="w-3 h-3" /> Reject
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? <p className="text-slate-400">Loading...</p> : (
         <div className="space-y-3">
