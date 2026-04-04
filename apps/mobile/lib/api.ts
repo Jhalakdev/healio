@@ -1,26 +1,30 @@
-import * as SecureStore from 'expo-secure-store';
+// In-memory token storage (works in Expo Go without native modules)
+let _tokens: { access: string | null; refresh: string | null } = {
+  access: null,
+  refresh: null,
+};
 
 const API_BASE = __DEV__ ? 'http://192.168.0.101:3000' : 'https://api.healio.in';
 
-export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync('accessToken');
+export function getToken(): string | null {
+  return _tokens.access;
 }
 
-export async function setTokens(access: string, refresh: string) {
-  await SecureStore.setItemAsync('accessToken', access);
-  await SecureStore.setItemAsync('refreshToken', refresh);
+export function setTokens(access: string, refresh: string) {
+  _tokens.access = access;
+  _tokens.refresh = refresh;
 }
 
-export async function clearTokens() {
-  await SecureStore.deleteItemAsync('accessToken');
-  await SecureStore.deleteItemAsync('refreshToken');
+export function clearTokens() {
+  _tokens.access = null;
+  _tokens.refresh = null;
 }
 
 export async function api<T = any>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = await getToken();
+  const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),

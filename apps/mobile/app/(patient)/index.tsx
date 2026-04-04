@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   StyleSheet,
-  FlatList,
+  TextInput,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,18 +13,35 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fontSize, spacing, radius } from '../../lib/theme';
 
 const specializations = [
-  { id: '1', name: 'General', icon: 'fitness-outline' as const },
-  { id: '2', name: 'Derma', icon: 'body-outline' as const },
-  { id: '3', name: 'Pediatric', icon: 'happy-outline' as const },
-  { id: '4', name: 'Cardio', icon: 'heart-outline' as const },
-  { id: '5', name: 'ENT', icon: 'ear-outline' as const },
-  { id: '6', name: 'Ortho', icon: 'walk-outline' as const },
+  { id: '1', name: 'Neurology', emoji: '🧠' },
+  { id: '2', name: 'Cardiology', emoji: '❤️' },
+  { id: '3', name: 'Orthopedics', emoji: '🦴' },
+  { id: '4', name: 'Pathology', emoji: '🔬' },
 ];
 
-const onlineDoctors = [
-  { id: '1', name: 'Dr. Priya Sharma', spec: 'General Medicine', fee: 500, rating: 4.9, online: true },
-  { id: '2', name: 'Dr. Amit Verma', spec: 'Dermatology', fee: 700, rating: 4.8, online: true },
-  { id: '3', name: 'Dr. Sanjay Kumar', spec: 'ENT', fee: 800, rating: 4.8, online: true },
+const popularDoctors = [
+  {
+    id: '1', name: 'Dr. Priya Sharma', spec: 'General Medicine',
+    fee: 500, rating: 4.9, reviews: 2530, online: true,
+  },
+  {
+    id: '2', name: 'Dr. Amit Verma', spec: 'Dermatology',
+    fee: 700, rating: 4.8, reviews: 2530, online: true,
+  },
+  {
+    id: '3', name: 'Dr. Neha Gupta', spec: 'Pediatrics',
+    fee: 600, rating: 4.9, reviews: 2530, online: false,
+  },
+  {
+    id: '4', name: 'Dr. Sanjay Kumar', spec: 'ENT',
+    fee: 800, rating: 4.8, reviews: 2530, online: true,
+  },
+];
+
+const familyMembers = [
+  { name: 'Chloe K.', color: '#FFD700' },
+  { name: 'Colter E.', color: '#FF6B6B' },
+  { name: 'Waylan A.', color: '#4ECDC4' },
 ];
 
 export default function PatientHome() {
@@ -32,41 +49,74 @@ export default function PatientHome() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Good afternoon 👋</Text>
-          <Text style={styles.headerTitle}>Find your doctor</Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.avatarSmall}>
+            <Text style={styles.avatarSmallText}>MW</Text>
+          </View>
+          <View>
+            <Text style={styles.welcomeText}>Welcome Back</Text>
+            <Text style={styles.userName}>Mr. Williamson</Text>
+          </View>
         </View>
-        <Pressable style={styles.notifBtn}>
-          <Ionicons name="notifications-outline" size={22} color={colors.text} />
-          <View style={styles.notifDot} />
-        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable style={styles.iconBtn}>
+            <Ionicons name="search-outline" size={20} color={colors.text} />
+          </Pressable>
+          <Pressable style={styles.iconBtn}>
+            <Ionicons name="notifications-outline" size={20} color={colors.text} />
+            <View style={styles.notifDot} />
+          </Pressable>
+        </View>
       </View>
 
-      {/* Quick Actions */}
+      {/* Search Banner */}
       <LinearGradient
-        colors={['#0d9488', '#059669']}
+        colors={['#0d9488', '#10b981']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.quickCard}
+        style={styles.searchBanner}
       >
-        <View>
-          <Text style={styles.quickTitle}>Need a consultation?</Text>
-          <Text style={styles.quickSub}>Talk to a doctor instantly</Text>
-        </View>
-        <Pressable style={styles.quickBtn}>
-          <Ionicons name="videocam" size={20} color={colors.primary} />
-          <Text style={styles.quickBtnText}>Consult Now</Text>
+        <Text style={styles.searchBannerTitle}>Looking for{'\n'}desired doctor?</Text>
+        <Pressable style={styles.searchBtn}>
+          <Ionicons name="search" size={14} color={colors.primary} />
+          <Text style={styles.searchBtnText}>Search for...</Text>
         </Pressable>
       </LinearGradient>
 
-      {/* Specializations */}
+      {/* Family Members */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Specializations</Text>
-        <View style={styles.specGrid}>
+        <Text style={styles.sectionTitle}>Family Member</Text>
+        <View style={styles.familyRow}>
+          {familyMembers.map((m) => (
+            <View key={m.name} style={styles.familyItem}>
+              <View style={[styles.familyAvatar, { backgroundColor: m.color }]}>
+                <Text style={styles.familyAvatarText}>{m.name[0]}</Text>
+              </View>
+              <Text style={styles.familyName}>{m.name}</Text>
+            </View>
+          ))}
+          <Pressable style={styles.familyItem}>
+            <View style={[styles.familyAvatar, { backgroundColor: colors.gray100, borderWidth: 2, borderColor: colors.gray200, borderStyle: 'dashed' }]}>
+              <Ionicons name="add" size={22} color={colors.gray400} />
+            </View>
+            <Text style={styles.familyName}>Add New</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Find Your Doctor - Specializations */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Find your doctor</Text>
+          <Pressable onPress={() => router.push('/(patient)/doctors')}>
+            <Text style={styles.seeAll}>See All &gt;</Text>
+          </Pressable>
+        </View>
+        <View style={styles.specRow}>
           {specializations.map((s) => (
             <Pressable key={s.id} style={styles.specItem}>
-              <View style={styles.specIcon}>
-                <Ionicons name={s.icon} size={24} color={colors.primary} />
+              <View style={styles.specCircle}>
+                <Text style={styles.specEmoji}>{s.emoji}</Text>
               </View>
               <Text style={styles.specName}>{s.name}</Text>
             </Pressable>
@@ -74,144 +124,149 @@ export default function PatientHome() {
         </View>
       </View>
 
-      {/* Online Doctors */}
+      {/* Popular Doctors */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Online Now</Text>
-          <Pressable onPress={() => router.push('/(patient)/doctors')}>
-            <Text style={styles.seeAll}>See all</Text>
+          <Text style={styles.sectionTitle}>Popular Doctors</Text>
+          <Pressable>
+            <Text style={styles.seeAll}>See All &gt;</Text>
           </Pressable>
         </View>
 
-        {onlineDoctors.map((doc) => (
-          <Pressable key={doc.id} style={styles.doctorCard}>
-            <View style={styles.doctorAvatar}>
-              <Text style={styles.avatarText}>
-                {doc.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-              </Text>
-              <View style={styles.onlineDot} />
+        {popularDoctors.map((doc) => (
+          <Pressable
+            key={doc.id}
+            style={styles.doctorCard}
+            onPress={() => router.push('/(patient)/doctor-profile')}
+          >
+            <View style={styles.docAvatarWrap}>
+              <View style={styles.docAvatar}>
+                <Text style={styles.docAvatarText}>
+                  {doc.name.split(' ').slice(1).map(n => n[0]).join('')}
+                </Text>
+              </View>
+              {doc.online && <View style={styles.onlineDot} />}
             </View>
-            <View style={styles.doctorInfo}>
-              <Text style={styles.doctorName}>{doc.name}</Text>
-              <Text style={styles.doctorSpec}>{doc.spec}</Text>
-              <View style={styles.doctorMeta}>
+
+            <View style={styles.docInfo}>
+              <Text style={styles.docName}>{doc.name}</Text>
+              <Text style={styles.docSpec}>{doc.spec}</Text>
+              <View style={styles.docRating}>
                 <Ionicons name="star" size={12} color="#f59e0b" />
-                <Text style={styles.rating}>{doc.rating}</Text>
-                <Text style={styles.fee}>₹{doc.fee}</Text>
+                <Text style={styles.ratingText}>{doc.rating} ({doc.reviews})</Text>
               </View>
             </View>
-            <Pressable style={styles.consultBtn}>
-              <Ionicons name="videocam" size={16} color={colors.white} />
-            </Pressable>
+
+            <View style={styles.docRight}>
+              <Text style={styles.feeLabel}>Fees</Text>
+              <Text style={styles.feeValue}>₹{doc.fee.toFixed(2)}</Text>
+              <Pressable style={styles.bookNowBtn}>
+                <Text style={styles.bookNowText}>Book Now</Text>
+              </Pressable>
+            </View>
           </Pressable>
         ))}
       </View>
 
-      {/* Plans */}
-      <View style={[styles.section, { marginBottom: 30 }]}>
-        <Text style={styles.sectionTitle}>Plans</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[
-            { name: 'Single', price: '₹299', consults: '1 Consultation', color: ['#0d9488', '#059669'] as [string, string] },
-            { name: '3-Pack', price: '₹699', consults: '3 Consultations', color: ['#7c3aed', '#6d28d9'] as [string, string] },
-            { name: '5-Pack', price: '₹999', consults: '5 Consultations', color: ['#ea580c', '#dc2626'] as [string, string] },
-          ].map((plan) => (
-            <LinearGradient
-              key={plan.name}
-              colors={plan.color}
-              style={styles.planCard}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Text style={styles.planName}>{plan.name}</Text>
-              <Text style={styles.planPrice}>{plan.price}</Text>
-              <Text style={styles.planConsults}>{plan.consults}</Text>
-              <Pressable style={styles.planBtn}>
-                <Text style={styles.planBtnText}>Buy Now</Text>
-              </Pressable>
-            </LinearGradient>
-          ))}
-        </ScrollView>
-      </View>
+      <View style={{ height: 30 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.white },
+
+  // Header
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: spacing.lg,
+    paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16,
   },
-  greeting: { fontSize: fontSize.sm, color: colors.textSecondary },
-  headerTitle: { fontSize: fontSize['2xl'], fontWeight: '800', color: colors.text, marginTop: 2 },
-  notifBtn: {
-    width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.gray100,
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarSmall: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarSmallText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  welcomeText: { fontSize: 12, color: colors.gray400 },
+  userName: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerRight: { flexDirection: 'row', gap: 8 },
+  iconBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray100,
     alignItems: 'center', justifyContent: 'center',
   },
   notifDot: {
-    position: 'absolute', top: 10, right: 10, width: 8, height: 8,
-    borderRadius: 4, backgroundColor: colors.danger,
+    position: 'absolute', top: 8, right: 8, width: 8, height: 8,
+    borderRadius: 4, backgroundColor: '#ef4444',
   },
-  quickCard: {
-    marginHorizontal: spacing.xl, borderRadius: radius.xl, padding: spacing.xl,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+
+  // Search banner
+  searchBanner: {
+    marginHorizontal: 20, borderRadius: 20, padding: 24,
+    marginBottom: 8,
   },
-  quickTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.white },
-  quickSub: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  quickBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.white, paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md, borderRadius: radius.lg,
+  searchBannerTitle: {
+    fontSize: 20, fontWeight: '700', color: colors.white, lineHeight: 28,
+    marginBottom: 16,
   },
-  quickBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.primary },
-  section: { marginTop: spacing['2xl'], paddingHorizontal: spacing.xl },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, marginBottom: spacing.lg },
-  seeAll: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
-  specGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  specItem: { width: '30%', alignItems: 'center', gap: spacing.sm },
-  specIcon: {
-    width: 56, height: 56, borderRadius: radius.lg, backgroundColor: '#e6f7f5',
+  searchBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.white, alignSelf: 'flex-start',
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12,
+  },
+  searchBtnText: { fontSize: 13, color: colors.gray400 },
+
+  // Family
+  familyRow: { flexDirection: 'row', gap: 20, paddingLeft: 4 },
+  familyItem: { alignItems: 'center', gap: 6 },
+  familyAvatar: {
+    width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center',
+  },
+  familyAvatarText: { fontSize: 20, fontWeight: '700', color: colors.white },
+  familyName: { fontSize: 11, color: colors.gray500, fontWeight: '500' },
+
+  // Section
+  section: { paddingHorizontal: 20, marginTop: 24 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  seeAll: { fontSize: 13, color: colors.primary, fontWeight: '600' },
+
+  // Specializations
+  specRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  specItem: { alignItems: 'center', gap: 8, flex: 1 },
+  specCircle: {
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: '#e6f7f5',
+  },
+  specEmoji: { fontSize: 26 },
+  specName: { fontSize: 11, color: colors.gray600, fontWeight: '500' },
+
+  // Doctor card
+  doctorCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f5f5f5',
+  },
+  docAvatarWrap: { position: 'relative' },
+  docAvatar: {
+    width: 50, height: 50, borderRadius: 25, backgroundColor: '#e0f2fe',
     alignItems: 'center', justifyContent: 'center',
   },
-  specName: { fontSize: fontSize.xs, fontWeight: '600', color: colors.textSecondary },
-  doctorCard: {
-    flexDirection: 'row', alignItems: 'center', padding: spacing.lg,
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    marginBottom: spacing.md, gap: spacing.md,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  doctorAvatar: {
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
-  },
-  avatarText: { color: colors.white, fontWeight: '700', fontSize: fontSize.base },
+  docAvatarText: { fontSize: 16, fontWeight: '700', color: '#0284c7' },
   onlineDot: {
-    position: 'absolute', bottom: 0, right: 0, width: 14, height: 14,
-    borderRadius: 7, backgroundColor: colors.success, borderWidth: 2, borderColor: colors.white,
+    position: 'absolute', bottom: 1, right: 1, width: 12, height: 12,
+    borderRadius: 6, backgroundColor: '#10b981', borderWidth: 2, borderColor: colors.white,
   },
-  doctorInfo: { flex: 1 },
-  doctorName: { fontSize: fontSize.base, fontWeight: '700', color: colors.text },
-  doctorSpec: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 1 },
-  doctorMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  rating: { fontSize: fontSize.xs, fontWeight: '600', color: colors.text },
-  fee: { fontSize: fontSize.xs, fontWeight: '700', color: colors.primary },
-  consultBtn: {
-    width: 44, height: 44, borderRadius: radius.md,
-    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+  docInfo: { flex: 1 },
+  docName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  docSpec: { fontSize: 12, color: colors.gray400, marginTop: 2 },
+  docRating: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  ratingText: { fontSize: 12, color: colors.gray500, fontWeight: '500' },
+  docRight: { alignItems: 'flex-end' },
+  feeLabel: { fontSize: 11, color: colors.gray400 },
+  feeValue: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 1 },
+  bookNowBtn: {
+    marginTop: 8, backgroundColor: colors.primary,
+    paddingHorizontal: 16, paddingVertical: 7, borderRadius: 8,
   },
-  planCard: {
-    width: 160, borderRadius: radius.xl, padding: spacing.xl,
-    marginRight: spacing.md,
-  },
-  planName: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-  planPrice: { fontSize: fontSize['2xl'], fontWeight: '800', color: colors.white, marginTop: 4 },
-  planConsults: { fontSize: fontSize.xs, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  planBtn: {
-    backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: spacing.sm,
-    borderRadius: radius.md, alignItems: 'center', marginTop: spacing.md,
-  },
-  planBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.white },
+  bookNowText: { fontSize: 12, fontWeight: '700', color: colors.white },
 });

@@ -1,84 +1,87 @@
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, spacing, radius } from '../../lib/theme';
+import { colors } from '../../lib/theme';
 import { clearTokens } from '../../lib/api';
 
-export default function ProfileTab() {
-  const logout = async () => {
-    await clearTokens();
-    router.replace('/');
-  };
+const menuItems = [
+  { icon: 'settings-outline' as const, label: 'General Settings' },
+  { icon: 'card-outline' as const, label: 'Payments History' },
+  { icon: 'help-circle-outline' as const, label: 'Frequently Asked Question' },
+  { icon: 'heart-outline' as const, label: 'Favourite Doctors' },
+  { icon: 'document-text-outline' as const, label: 'Test Reports' },
+  { icon: 'document-outline' as const, label: 'Terms & Conditions' },
+];
 
-  const menuItems = [
-    { icon: 'wallet-outline' as const, label: 'Wallet', sub: 'Balance & transactions' },
-    { icon: 'document-text-outline' as const, label: 'My Reports', sub: 'Uploaded reports' },
-    { icon: 'receipt-outline' as const, label: 'Order History', sub: 'Past bookings & payments' },
-    { icon: 'card-outline' as const, label: 'My Plans', sub: 'Active subscription' },
-    { icon: 'settings-outline' as const, label: 'Settings', sub: 'App preferences' },
-    { icon: 'help-circle-outline' as const, label: 'Help & Support', sub: 'FAQs, contact us' },
-  ];
-
+export default function MoreTab() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>RK</Text>
+        <View>
+          <Text style={styles.welcomeText}>Welcome Back</Text>
+          <Text style={styles.headerTitle}>More</Text>
         </View>
-        <Text style={styles.name}>Rahul Kumar</Text>
-        <Text style={styles.phone}>+91 98765 43210</Text>
+        <View style={styles.headerRight}>
+          <Pressable style={styles.iconBtn}>
+            <Ionicons name="search-outline" size={20} color={colors.text} />
+          </Pressable>
+          <Pressable style={styles.iconBtn}>
+            <Ionicons name="notifications-outline" size={20} color={colors.text} />
+          </Pressable>
+        </View>
       </View>
 
-      <View style={styles.menu}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {menuItems.map((item) => (
           <Pressable key={item.label} style={styles.menuItem}>
             <View style={styles.menuIcon}>
-              <Ionicons name={item.icon} size={20} color={colors.primary} />
+              <Ionicons name={item.icon} size={22} color={colors.primary} />
             </View>
-            <View style={styles.menuInfo}>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Text style={styles.menuSub}>{item.sub}</Text>
-            </View>
+            <Text style={styles.menuLabel}>{item.label}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.gray300} />
           </Pressable>
         ))}
-      </View>
 
-      <Pressable style={styles.logoutBtn} onPress={logout}>
-        <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-        <Text style={styles.logoutText}>Logout</Text>
-      </Pressable>
+        <Pressable
+          style={styles.logoutBtn}
+          onPress={() => { clearTokens(); router.replace('/'); }}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </Pressable>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { alignItems: 'center', paddingTop: 70, paddingBottom: spacing['2xl'] },
-  avatar: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primary,
+  container: { flex: 1, backgroundColor: colors.white },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20,
+  },
+  welcomeText: { fontSize: 12, color: colors.gray400 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginTop: 2 },
+  headerRight: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  iconBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray100,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: fontSize['2xl'], fontWeight: '700', color: colors.white },
-  name: { fontSize: fontSize.xl, fontWeight: '700', color: colors.text, marginTop: spacing.md },
-  phone: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  menu: { paddingHorizontal: spacing.xl, gap: spacing.sm },
   menuItem: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.white, padding: spacing.lg, borderRadius: radius.lg,
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    paddingHorizontal: 20, paddingVertical: 18,
+    borderBottomWidth: 1, borderBottomColor: '#f5f5f5',
   },
   menuIcon: {
-    width: 40, height: 40, borderRadius: radius.md, backgroundColor: '#e6f7f5',
+    width: 44, height: 44, borderRadius: 22, backgroundColor: '#f0fdf4',
     alignItems: 'center', justifyContent: 'center',
   },
-  menuInfo: { flex: 1 },
-  menuLabel: { fontSize: fontSize.base, fontWeight: '600', color: colors.text },
-  menuSub: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 1 },
+  menuLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.sm, marginTop: spacing['2xl'], marginHorizontal: spacing.xl,
-    padding: spacing.lg, borderRadius: radius.lg,
+    gap: 8, marginTop: 32, marginHorizontal: 20,
+    paddingVertical: 16, borderRadius: 14,
     backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
   },
-  logoutText: { fontSize: fontSize.base, fontWeight: '600', color: colors.danger },
+  logoutText: { fontSize: 15, fontWeight: '600', color: '#ef4444' },
 });

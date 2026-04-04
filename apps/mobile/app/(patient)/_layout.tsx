@@ -11,10 +11,12 @@ export default function PatientLayout() {
         tabBarInactiveTintColor: colors.gray400,
         tabBarStyle: {
           backgroundColor: colors.white,
-          borderTopColor: colors.gray200,
+          borderTopColor: '#f0f0f0',
           height: 85,
           paddingTop: 8,
           paddingBottom: 28,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
@@ -24,7 +26,7 @@ export default function PatientLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Ionicons name="home" size={22} color={color} />
           ),
         }}
       />
@@ -33,25 +35,25 @@ export default function PatientLayout() {
         options={{
           title: 'Doctors',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
+            <Ionicons name="people" size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="booking"
         options={{
-          title: 'Bookings',
+          title: 'Messages',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <Ionicons name="chatbubbles" size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'More',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="grid" size={22} color={color} />
           ),
         }}
       />

@@ -7,12 +7,11 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, spacing, radius } from '../../lib/theme';
-import { api, setTokens } from '../../lib/api';
+import { setTokens } from '../../lib/api';
 
 export default function PatientLogin() {
   const [phone, setPhone] = useState('');
@@ -21,38 +20,17 @@ export default function PatientLogin() {
   const [loading, setLoading] = useState(false);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
-  const sendOtp = async () => {
-    if (phone.length < 10) return Alert.alert('Error', 'Enter a valid phone number');
-    setLoading(true);
-    try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      await api('/auth/patient/send-otp', {
-        method: 'POST',
-        body: JSON.stringify({ phone: formattedPhone }),
-      });
-      setOtpSent(true);
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
-    setLoading(false);
+  const sendOtp = () => {
+    if (phone.length < 10) return;
+    setOtpSent(true);
   };
 
-  const verifyOtp = async () => {
+  const verifyOtp = () => {
     const otpCode = otp.join('');
-    if (otpCode.length !== 6) return Alert.alert('Error', 'Enter 6-digit OTP');
-    setLoading(true);
-    try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      const res = await api<any>('/auth/patient/verify-otp', {
-        method: 'POST',
-        body: JSON.stringify({ phone: formattedPhone, otp: otpCode }),
-      });
-      await setTokens(res.accessToken, res.refreshToken);
-      router.replace('/(patient)');
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
-    setLoading(false);
+    if (otpCode.length !== 6) return;
+    // Mock login — skip backend, go straight to home
+    setTokens('mock-token-patient', 'mock-refresh');
+    router.replace('/(patient)');
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -80,7 +58,7 @@ export default function PatientLogin() {
         </Text>
         <Text style={styles.subtitle}>
           {otpSent
-            ? `We sent a 6-digit code to +91${phone}`
+            ? `We sent a 6-digit code to +91 ${phone}`
             : 'Enter your phone number to get started'}
         </Text>
       </View>
@@ -101,14 +79,8 @@ export default function PatientLogin() {
               onChangeText={setPhone}
             />
           </View>
-          <Pressable
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={sendOtp}
-            disabled={loading}
-          >
-            <Text style={styles.btnText}>
-              {loading ? 'Sending...' : 'Send OTP'}
-            </Text>
+          <Pressable style={styles.btn} onPress={sendOtp}>
+            <Text style={styles.btnText}>Send OTP</Text>
             <Ionicons name="arrow-forward" size={20} color={colors.white} />
           </Pressable>
         </View>
@@ -132,19 +104,13 @@ export default function PatientLogin() {
               />
             ))}
           </View>
-          <Pressable
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={verifyOtp}
-            disabled={loading}
-          >
-            <Text style={styles.btnText}>
-              {loading ? 'Verifying...' : 'Verify & Login'}
-            </Text>
+          <Pressable style={styles.btn} onPress={verifyOtp}>
+            <Text style={styles.btnText}>Verify & Login</Text>
           </Pressable>
           <Pressable onPress={() => setOtpSent(false)}>
             <Text style={styles.changePhone}>Change phone number</Text>
           </Pressable>
-          <Text style={styles.devHint}>Dev mode OTP: 123456</Text>
+          <Text style={styles.devHint}>Enter any 6 digits to continue</Text>
         </View>
       )}
     </KeyboardAvoidingView>
@@ -152,7 +118,7 @@ export default function PatientLogin() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing['2xl'] },
+  container: { flex: 1, backgroundColor: colors.white, paddingHorizontal: spacing['2xl'] },
   back: { marginTop: 60, width: 40 },
   header: { marginTop: spacing['3xl'] },
   iconBg: {
@@ -179,7 +145,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm, height: 56, borderRadius: radius.lg,
     backgroundColor: colors.primary,
   },
-  btnDisabled: { opacity: 0.6 },
   btnText: { fontSize: fontSize.lg, fontWeight: '700', color: colors.white },
   otpRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md },
   otpBox: {
@@ -189,11 +154,6 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'transparent',
   },
   otpBoxFilled: { borderColor: colors.primary, backgroundColor: '#e6f7f5' },
-  changePhone: {
-    textAlign: 'center', color: colors.textSecondary, fontSize: fontSize.sm,
-  },
-  devHint: {
-    textAlign: 'center', color: colors.gray400, fontSize: fontSize.xs,
-    marginTop: spacing.sm,
-  },
+  changePhone: { textAlign: 'center', color: colors.textSecondary, fontSize: fontSize.sm },
+  devHint: { textAlign: 'center', color: colors.gray400, fontSize: fontSize.xs, marginTop: spacing.sm },
 });
