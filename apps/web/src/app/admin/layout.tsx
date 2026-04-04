@@ -32,6 +32,7 @@ const navItems = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/plans", label: "Plans", icon: CreditCard },
   { href: "/admin/coupons", label: "Coupons", icon: Tag },
+  { href: "/admin/lab-tests", label: "Health Packages", icon: Grid3X3 },
   { href: "/admin/categories", label: "Specialists", icon: Grid3X3 },
   { href: "/admin/symptoms", label: "Symptoms", icon: Stethoscope },
   { href: "/admin/content", label: "Content", icon: FileText },

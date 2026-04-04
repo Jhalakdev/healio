@@ -15,6 +15,7 @@ const navItems = [
   { href: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard, requiresApproval: false },
   { href: "/doctor/bookings", label: "Bookings", icon: Calendar, requiresApproval: true },
   { href: "/doctor/earnings", label: "Earnings", icon: IndianRupee, requiresApproval: true },
+  { href: "/doctor/lab-orders", label: "Lab Orders", icon: FileText, requiresApproval: true },
   { href: "/doctor/documents", label: "Documents", icon: FileText, requiresApproval: false },
   { href: "/doctor/notifications", label: "Notifications", icon: Bell, requiresApproval: false },
   { href: "/doctor/settings", label: "Settings", icon: Settings, requiresApproval: false },
