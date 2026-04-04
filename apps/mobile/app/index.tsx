@@ -40,7 +40,7 @@ export default function Welcome() {
           ))}
         </View>
 
-        {/* CTA Buttons */}
+        {/* CTA Button — single entry for both patients and doctors */}
         <View style={styles.actions}>
           <Pressable
             style={styles.primaryBtn}
@@ -48,14 +48,6 @@ export default function Welcome() {
           >
             <Text style={styles.primaryBtnText}>Get Started</Text>
             <Ionicons name="arrow-forward" size={20} color={colors.primary} />
-          </Pressable>
-
-          <Pressable
-            style={styles.secondaryBtn}
-            onPress={() => router.push('/(auth)/doctor-login')}
-          >
-            <Ionicons name="medkit-outline" size={18} color={colors.white} />
-            <Text style={styles.secondaryBtnText}>I'm a Doctor</Text>
           </Pressable>
         </View>
       </View>
@@ -123,20 +115,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
-  secondaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: 16,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  secondaryBtnText: {
-    fontSize: fontSize.base,
-    fontWeight: '600',
+  _unused: {
     color: colors.white,
   },
 });
