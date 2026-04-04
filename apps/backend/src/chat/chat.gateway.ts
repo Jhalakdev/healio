@@ -175,4 +175,89 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       newDurationMin,
     });
   }
+
+  // ─── TYPING INDICATOR (doctor only visible to patient) ──
+
+  @SubscribeMessage('chat:typing')
+  handleTyping(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { bookingId: string; isTyping: boolean },
+  ) {
+    client.to(`booking:${data.bookingId}`).emit('chat:typing', {
+      userId: client.userId,
+      role: client.role,
+      isTyping: data.isTyping,
+    });
+  }
+
+  // ─── MESSAGE READ RECEIPTS ────────────────────────
+
+  @SubscribeMessage('chat:delivered')
+  async handleDelivered(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { messageId: string; bookingId: string },
+  ) {
+    await this.prisma.message.update({
+      where: { id: data.messageId },
+      data: { status: 'delivered', deliveredAt: new Date() },
+    });
+    client.to(`booking:${data.bookingId}`).emit('chat:status', {
+      messageId: data.messageId,
+      status: 'delivered',
+    });
+  }
+
+  @SubscribeMessage('chat:read')
+  async handleRead(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { messageId: string; bookingId: string },
+  ) {
+    await this.prisma.message.update({
+      where: { id: data.messageId },
+      data: { status: 'read', readAt: new Date() },
+    });
+    client.to(`booking:${data.bookingId}`).emit('chat:status', {
+      messageId: data.messageId,
+      status: 'read',
+    });
+  }
+
+  @SubscribeMessage('chat:played')
+  async handlePlayed(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { messageId: string; bookingId: string },
+  ) {
+    // For voice messages — mark as "played"
+    await this.prisma.message.update({
+      where: { id: data.messageId },
+      data: { status: 'played', playedAt: new Date() },
+    });
+    client.to(`booking:${data.bookingId}`).emit('chat:status', {
+      messageId: data.messageId,
+      status: 'played',
+    });
+  }
+
+  // ─── MARK ALL MESSAGES IN BOOKING AS READ ─────────
+
+  @SubscribeMessage('chat:read-all')
+  async handleReadAll(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { bookingId: string },
+  ) {
+    if (!client.userId) return;
+    // Mark all messages NOT sent by this user as read
+    await this.prisma.message.updateMany({
+      where: {
+        bookingId: data.bookingId,
+        senderId: { not: client.userId },
+        status: { in: ['sent', 'delivered'] },
+      },
+      data: { status: 'read', readAt: new Date() },
+    });
+    client.to(`booking:${data.bookingId}`).emit('chat:all-read', {
+      bookingId: data.bookingId,
+      readBy: client.userId,
+    });
+  }
 }

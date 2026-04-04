@@ -49,6 +49,16 @@ export default function MoreTab() {
           <Ionicons name="log-out-outline" size={20} color="#ef4444" />
           <Text style={styles.logoutText}>Logout</Text>
         </Pressable>
+
+        {/* Branding */}
+        <View style={styles.branding}>
+          <Text style={styles.brandingText}>Developed by</Text>
+          <Pressable onPress={() => {/* Linking.openURL('https://webaccuracy.com') */}}>
+            <Text style={styles.brandingLink}>@webaccuracy</Text>
+          </Pressable>
+          <Text style={styles.brandingVenture}>Healio — a venture of Web Accuracy Pvt. Ltd.</Text>
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -84,4 +94,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
   },
   logoutText: { fontSize: 15, fontWeight: '600', color: '#ef4444' },
+  branding: { alignItems: 'center', marginTop: 40, marginBottom: 30, gap: 4 },
+  brandingText: { fontSize: 11, color: colors.gray400 },
+  brandingLink: { fontSize: 14, fontWeight: '700', color: colors.primary },
+  brandingVenture: { fontSize: 11, color: colors.gray400, marginTop: 2 },
+  versionText: { fontSize: 10, color: colors.gray300, marginTop: 8 },
 });

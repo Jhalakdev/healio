@@ -365,13 +365,17 @@ model Review {
 // ─── MESSAGING ──────────────────────────────────────
 
 model Message {
-  id        String      @id @default(cuid())
-  bookingId String
-  senderId  String
-  type      MessageType @default(TEXT)
-  content   String
-  fileUrl   String?
-  createdAt DateTime    @default(now())
+  id          String      @id @default(cuid())
+  bookingId   String
+  senderId    String
+  type        MessageType @default(TEXT)
+  content     String
+  fileUrl     String?
+  status      String      @default("sent") // "sent" | "delivered" | "read" | "played" (for voice)
+  deliveredAt DateTime?
+  readAt      DateTime?
+  playedAt    DateTime?   // for voice messages: when recipient played it
+  createdAt   DateTime    @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id])
   sender  User    @relation("sender", fields: [senderId], references: [id])
