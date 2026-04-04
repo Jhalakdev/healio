@@ -56,6 +56,12 @@ html {
   }
 }
 
+/* Admin dark theme overrides */
+.admin-dark .card,
+[class*="bg-[#0a0f1a]"] .rounded-2xl {
+  --tw-bg-opacity: 1;
+}
+
 /* Gradient text utility */
 .gradient-text {
   background: linear-gradient(135deg, #0d9488, #059669, #10b981);

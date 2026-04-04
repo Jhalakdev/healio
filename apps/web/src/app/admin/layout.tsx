@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Stethoscope,
@@ -16,11 +16,12 @@ import {
   LogOut,
   BarChart3,
   Users,
+  ShieldCheck,
+  FileText,
+  Grid3X3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,8 +32,9 @@ const navItems = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/plans", label: "Plans", icon: CreditCard },
   { href: "/admin/coupons", label: "Coupons", icon: Tag },
-  { href: "/admin/categories", label: "Categories", icon: Stethoscope },
-  { href: "/admin/content", label: "Content", icon: Settings },
+  { href: "/admin/categories", label: "Categories", icon: Grid3X3 },
+  { href: "/admin/content", label: "Content", icon: FileText },
+  { href: "/admin/roles", label: "Page Roles", icon: ShieldCheck },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -42,26 +44,33 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    router.push("/auth/login");
+  };
+
   return (
-    <div className="flex h-screen bg-slate-50">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-[#0a0f1a]">
+      {/* Sidebar — dark */}
       <aside
         className={cn(
-          "flex flex-col border-r border-slate-200/60 bg-white transition-all duration-300 ease-in-out",
+          "flex flex-col border-r border-white/5 bg-[#0f1520] transition-all duration-300 ease-in-out",
           collapsed ? "w-[72px]" : "w-[260px]"
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center gap-2 px-4 border-b border-slate-100">
+        <div className="h-16 flex items-center gap-2 px-4 border-b border-white/5">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shrink-0">
             <HeartPulse className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
             <div>
-              <span className="text-lg font-bold tracking-tight">Healio</span>
-              <span className="text-[10px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-md font-semibold ml-2">
+              <span className="text-lg font-bold tracking-tight text-white">Healio</span>
+              <span className="text-[10px] bg-teal-500/20 text-teal-400 px-1.5 py-0.5 rounded-md font-semibold ml-2">
                 ADMIN
               </span>
             </div>
@@ -80,14 +89,14 @@ export default function AdminLayout({
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-700 shadow-sm"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                      ? "bg-teal-500/15 text-teal-400"
+                      : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                   )}
                 >
                   <item.icon
                     className={cn(
                       "w-5 h-5 shrink-0",
-                      isActive ? "text-teal-600" : "text-slate-400"
+                      isActive ? "text-teal-400" : "text-slate-500"
                     )}
                   />
                   {!collapsed && <span>{item.label}</span>}
@@ -97,12 +106,11 @@ export default function AdminLayout({
           </nav>
         </ScrollArea>
 
-        {/* Collapse toggle */}
-        <Separator />
-        <div className="p-3">
+        {/* Collapse */}
+        <div className="border-t border-white/5 p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl text-slate-500 hover:bg-white/5 hover:text-slate-300 transition-colors"
           >
             {collapsed ? (
               <ChevronRight className="w-4 h-4" />
@@ -116,34 +124,56 @@ export default function AdminLayout({
         </div>
 
         {/* User */}
-        <Separator />
-        <div className="p-3">
+        <div className="border-t border-white/5 p-3">
           <div
             className={cn(
-              "flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer",
+              "flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer",
               collapsed && "justify-center"
             )}
           >
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="text-xs">AD</AvatarFallback>
-            </Avatar>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+              AD
+            </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">Admin</p>
-                <p className="text-xs text-slate-400 truncate">
-                  admin@healio.in
-                </p>
+                <p className="text-sm font-semibold text-white truncate">Admin</p>
+                <p className="text-xs text-slate-500 truncate">admin@healio.in</p>
               </div>
             )}
             {!collapsed && (
-              <LogOut className="w-4 h-4 text-slate-300 hover:text-red-500 transition-colors shrink-0" />
+              <button onClick={logout}>
+                <LogOut className="w-4 h-4 text-slate-500 hover:text-red-400 transition-colors shrink-0" />
+              </button>
             )}
           </div>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      {/* Main content — dark bg with forced dark text colors */}
+      <main className="flex-1 overflow-auto bg-[#0a0f1a] text-white
+        [&_.text-slate-400]:text-slate-400
+        [&_.text-slate-500]:text-slate-500
+        [&_.font-extrabold]:text-white
+        [&_.font-bold]:text-slate-100
+        [&_h1]:text-white
+        [&_h2]:text-white
+        [&_h3]:text-white
+        [&_.rounded-2xl]:bg-[#141c2b] [&_.rounded-2xl]:border-white/5
+        [&_.bg-white]:bg-[#141c2b]
+        [&_.bg-slate-50]:bg-[#0f1520]
+        [&_.bg-slate-100]:bg-white/5
+        [&_.border-slate-200]:border-white/5
+        [&_.border-slate-200\\/60]:border-white/5
+        [&_input]:bg-[#1a2435] [&_input]:border-white/10 [&_input]:text-white
+        [&_select]:bg-[#1a2435] [&_select]:border-white/10 [&_select]:text-white
+        [&_textarea]:bg-[#1a2435] [&_textarea]:border-white/10 [&_textarea]:text-white
+        [&_.text-sm]:text-slate-300
+        [&_.text-xs]:text-slate-400
+        [&_.border-b]:border-white/5
+        [&_.border-t]:border-white/5
+        [&_.shadow-sm]:shadow-none
+        [&_.shadow-xl]:shadow-none
+      ">
         <div className="p-8">{children}</div>
       </main>
     </div>
