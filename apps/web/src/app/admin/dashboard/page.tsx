@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const [dash, setDash] = useState<any>({});
   const [analytics, setAnalytics] = useState<any>({});
   const [bookings, setBookings] = useState<any>({ data: [] });
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
       adminApi("/admin/dashboard").then(setDash).catch(() => {}),
       adminApi("/admin/analytics").then(setAnalytics).catch(() => {}),
       adminApi("/admin/bookings?limit=5").then(setBookings).catch(() => {}),
+      adminApi("/admin/doctors").then(setDoctors).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -132,6 +134,40 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Doctor Approvals */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">Pending Doctor Approvals</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => router.push("/admin/doctors")}>
+            Manage
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const pending = (doctors || []).filter((d: any) => d.verificationStatus === "PENDING");
+            return pending.length > 0 ? (
+              <div className="space-y-3">
+                {pending.map((d: any) => (
+                  <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm">
+                      {d.name?.[0] || "D"}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">{d.name}</p>
+                      <p className="text-xs text-slate-500">{d.user?.email} · {d.specialization || "No specialization"}</p>
+                    </div>
+                    <Badge variant="warning">PENDING</Badge>
+                    <Button size="sm" onClick={() => router.push("/admin/doctors")}>Review</Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-slate-500 text-sm">No pending approvals. All doctors reviewed.</p>
+            );
+          })()}
+        </CardContent>
+      </Card>
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-4">

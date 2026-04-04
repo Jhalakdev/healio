@@ -86,20 +86,49 @@ export default function AdminPlansPage() {
           <CardHeader>
             <CardTitle>{editingId ? "Edit Plan" : "Create New Plan"}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="Plan Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <select className="px-3 py-2 rounded-xl border text-sm" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                <option value="single">Single</option>
-                <option value="family">Family</option>
-                <option value="yearly">Yearly</option>
-              </select>
-              <Input placeholder="Price (₹)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-              <Input placeholder="Consultations" type="number" value={form.consultations} onChange={(e) => setForm({ ...form, consultations: e.target.value })} />
-              <Input placeholder="Max Members" type="number" value={form.maxMembers} onChange={(e) => setForm({ ...form, maxMembers: e.target.value })} />
-              <Input placeholder="Validity (days)" type="number" value={form.validityDays} onChange={(e) => setForm({ ...form, validityDays: e.target.value })} />
-              <Input placeholder="Child Discount (%)" type="number" value={form.childDiscountPercent} onChange={(e) => setForm({ ...form, childDiscountPercent: e.target.value })} />
-              <Input placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Plan Name *</label>
+                <Input placeholder="e.g. Family Plan - 3 Members" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Plan Type *</label>
+                <select className="w-full px-3 py-2 rounded-xl border text-sm h-11" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                  <option value="single">Single (1 person, 1 consultation)</option>
+                  <option value="family">Family (multiple members)</option>
+                  <option value="yearly">Yearly (annual card)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Price (₹) *</label>
+                <Input placeholder="e.g. 1000" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                <p className="text-[10px] text-slate-500 mt-1">Amount patient pays for this plan</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Number of Consultations *</label>
+                <Input placeholder="e.g. 3" type="number" value={form.consultations} onChange={(e) => setForm({ ...form, consultations: e.target.value })} />
+                <p className="text-[10px] text-slate-500 mt-1">How many doctor video calls included</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Max Family Members</label>
+                <Input placeholder="e.g. 5" type="number" value={form.maxMembers} onChange={(e) => setForm({ ...form, maxMembers: e.target.value })} />
+                <p className="text-[10px] text-slate-500 mt-1">1 = individual, 3-5 = family plan</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Validity (Days)</label>
+                <Input placeholder="e.g. 90" type="number" value={form.validityDays} onChange={(e) => setForm({ ...form, validityDays: e.target.value })} />
+                <p className="text-[10px] text-slate-500 mt-1">30 = 1 month, 90 = 3 months, 365 = 1 year</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Child Discount (%)</label>
+                <Input placeholder="e.g. 10" type="number" value={form.childDiscountPercent} onChange={(e) => setForm({ ...form, childDiscountPercent: e.target.value })} />
+                <p className="text-[10px] text-slate-500 mt-1">Discount when booking for a child member</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Description</label>
+                <Input placeholder="e.g. Best for larger families" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={savePlan}><Save className="w-4 h-4" /> {editingId ? "Update Plan" : "Create Plan"}</Button>
