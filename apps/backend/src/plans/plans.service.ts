@@ -121,9 +121,10 @@ export class PlansService {
     });
   }
 
-  // Use one consultation from active plan (called during booking)
-  async useConsultation(patientId: string): Promise<boolean> {
-    const activePlan = await this.prisma.patientPlan.findFirst({
+  // Use one consultation from active plan (own OR linked family plan)
+  async useConsultation(patientId: string, userId: string): Promise<boolean> {
+    // First check own plan
+    let activePlan = await this.prisma.patientPlan.findFirst({
       where: {
         patientId,
         isActive: true,
@@ -131,6 +132,35 @@ export class PlansService {
         expiresAt: { gt: new Date() },
       },
     });
+
+    // If no own plan, check if user is linked to a family plan
+    if (!activePlan) {
+      const linkedMember = await this.prisma.familyMember.findFirst({
+        where: { linkedUserId: userId },
+      });
+
+      if (linkedMember) {
+        activePlan = await this.prisma.patientPlan.findFirst({
+          where: {
+            patientId: linkedMember.patientId, // family owner's plan
+            isActive: true,
+            consultationsRemaining: { gt: 0 },
+            expiresAt: { gt: new Date() },
+          },
+          include: { plan: true },
+        });
+
+        // Check if plan supports this many members
+        if (activePlan) {
+          const plan = (activePlan as any).plan;
+          if (plan && plan.maxMembers <= 1) {
+            activePlan = null; // single plan can't be shared
+          }
+        }
+      }
+    }
+
+    if (!activePlan) return false;
 
     if (!activePlan) return false;
 

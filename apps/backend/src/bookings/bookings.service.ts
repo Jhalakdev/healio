@@ -75,7 +75,7 @@ export class BookingsService {
 
     // Option 1: Use active plan (free consultation)
     if (dto.usePlan) {
-      const planUsed = await this.plansService.useConsultation(patient.id);
+      const planUsed = await this.plansService.useConsultation(patient.id, patientUserId);
       if (!planUsed) {
         throw new BadRequestException(
           'No active plan with remaining consultations. Purchase a plan or pay via wallet.',
@@ -122,6 +122,19 @@ export class BookingsService {
         where: { id: coupon.id },
         data: { usedCount: { increment: 1 } },
       });
+    }
+
+    // Option 3: Child discount (10% off flat rate, only for children)
+    if (!paidViaPlan && dto.forMemberId) {
+      const member = await this.prisma.familyMember.findUnique({
+        where: { id: dto.forMemberId },
+      });
+      if (member && member.isChild) {
+        const childDiscount = amountToCharge.mul(new Decimal(0.10)); // 10%
+        discount = discount.add(childDiscount);
+        amountToCharge = amountToCharge.sub(childDiscount);
+        if (amountToCharge.lessThan(0)) amountToCharge = new Decimal(0);
+      }
     }
 
     // Check wallet balance (if paying via wallet)

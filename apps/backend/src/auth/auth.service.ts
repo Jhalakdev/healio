@@ -53,7 +53,7 @@ export class AuthService {
   async verifyOtp(
     phone: string,
     otp: string,
-  ): Promise<TokenPair & { isNewUser: boolean }> {
+  ): Promise<TokenPair & { isNewUser: boolean; familyPlan: any }> {
     const storedOtp = await this.redis.getOtp(phone);
 
     if (!storedOtp || storedOtp !== otp) {
@@ -84,8 +84,50 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
+    // Check if this phone is listed as a family member in another account
+    // If so, link this user's account to that family member record
+    let familyPlan = null;
+    const familyMemberRecord = await this.prisma.familyMember.findFirst({
+      where: { phoneNumber: phone, linkedUserId: null },
+      include: {
+        patient: {
+          include: {
+            subscriptions: {
+              where: {
+                isActive: true,
+                consultationsRemaining: { gt: 0 },
+                expiresAt: { gt: new Date() },
+              },
+              include: { plan: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (familyMemberRecord) {
+      // Link this user to the family member record
+      await this.prisma.familyMember.update({
+        where: { id: familyMemberRecord.id },
+        data: { linkedUserId: user.id, isVerified: true },
+      });
+
+      // Check if the family owner has an active plan
+      const ownerPlan = familyMemberRecord.patient.subscriptions[0];
+      if (ownerPlan) {
+        familyPlan = {
+          ownerName: familyMemberRecord.patient.name,
+          planName: ownerPlan.plan.name,
+          consultationsRemaining: ownerPlan.consultationsRemaining,
+          expiresAt: ownerPlan.expiresAt,
+          message: `You're on ${familyMemberRecord.patient.name}'s family plan!`,
+        };
+      }
+    }
+
     const tokens = await this.generateTokens({ sub: user.id, role: user.role });
-    return { ...tokens, isNewUser };
+    return { ...tokens, isNewUser, familyPlan };
   }
 
   // ─── DOCTOR: Email + Password ───────────────────

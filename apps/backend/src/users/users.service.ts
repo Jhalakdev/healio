@@ -16,11 +16,55 @@ export class UsersService {
       include: {
         user: { select: { phone: true, email: true, role: true, createdAt: true } },
         familyMembers: { orderBy: { createdAt: 'asc' } },
+        subscriptions: {
+          where: { isActive: true, expiresAt: { gt: new Date() } },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
     if (!patient) throw new NotFoundException('Patient not found');
-    return patient;
+
+    // Check if this user is a linked family member of another account
+    const linkedMembership = await this.prisma.familyMember.findFirst({
+      where: { linkedUserId: userId },
+      include: {
+        patient: {
+          include: {
+            user: { select: { phone: true } },
+            familyMembers: { orderBy: { createdAt: 'asc' } },
+            subscriptions: {
+              where: {
+                isActive: true,
+                consultationsRemaining: { gt: 0 },
+                expiresAt: { gt: new Date() },
+              },
+              include: { plan: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    // If user is part of another family, sync that family's data
+    const familyGroup = linkedMembership
+      ? {
+          ownerId: linkedMembership.patientId,
+          ownerName: linkedMembership.patient.name,
+          myRelation: linkedMembership.relation,
+          members: linkedMembership.patient.familyMembers,
+          sharedPlan: linkedMembership.patient.subscriptions[0] || null,
+        }
+      : null;
+
+    return {
+      ...patient,
+      ownPlan: patient.subscriptions[0] || null,
+      familyGroup,
+    };
   }
 
   async updatePatientProfile(userId: string, dto: UpdatePatientProfileDto) {

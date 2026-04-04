@@ -106,24 +106,26 @@ model Patient {
 }
 
 model FamilyMember {
-  id          String   @id @default(cuid())
-  patientId   String
-  name        String
-  relation    String   // "spouse", "child", "parent", "sibling", "other"
-  isChild     Boolean  @default(false)
-  age         Int?
-  dob         DateTime?
-  gender      String?
-  bloodGroup  String?
-  photoUrl    String?
-  phoneNumber String?  // required if age >= 18
-  isVerified  Boolean  @default(false) // phone verified for 18+
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  patientId       String   // owner of the family group
+  linkedUserId    String?  // if this member has their own account, link it here
+  name            String
+  relation        String   // "self", "spouse", "child", "parent", "sibling"
+  isChild         Boolean  @default(false)
+  age             Int?
+  dob             DateTime?
+  gender          String?
+  bloodGroup      String?
+  photoUrl        String?
+  phoneNumber     String?  // required if age >= 18
+  isVerified      Boolean  @default(false) // phone verified for 18+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   patient  Patient   @relation(fields: [patientId], references: [id])
   bookings Booking[] @relation("memberBookings")
 
+  @@unique([patientId, phoneNumber]) // same phone can't be added twice in same family
   @@map("family_members")
 }
 
