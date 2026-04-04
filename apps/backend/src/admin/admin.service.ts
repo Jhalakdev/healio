@@ -513,4 +513,161 @@ export class AdminService {
   async setCommissionRate(percent: number) {
     return this.setGlobalConfig('platform_commission_percent', percent);
   }
+
+  // ─── PATIENT DETAIL (full data) ─────────────────
+  async getPatientDetail(patientId: string) {
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: patientId },
+      include: {
+        user: { select: { phone: true, email: true, isActive: true, createdAt: true, role: true } },
+        familyMembers: true,
+        subscriptions: { include: { plan: true }, orderBy: { createdAt: 'desc' } },
+        bookings: {
+          include: {
+            doctor: { select: { name: true, specialization: true } },
+            prescription: true,
+            reports: true,
+            review: true,
+            messages: { orderBy: { createdAt: 'asc' } },
+            forMember: { select: { name: true, relation: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+        reports: { orderBy: { createdAt: 'desc' }, take: 20 },
+        reviews: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+    if (!patient) return null;
+
+    // Get wallet
+    const wallet = await this.prisma.wallet.findUnique({ where: { userId: patient.userId } });
+    const transactions = await this.prisma.transaction.findMany({
+      where: { userId: patient.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+
+    return { ...patient, wallet, transactions };
+  }
+
+  // ─── BOOKING DETAIL (with chat history) ─────────
+  async getBookingDetail(bookingId: string) {
+    return this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        patient: { select: { name: true, userId: true } },
+        doctor: { select: { name: true, specialization: true, userId: true } },
+        prescription: true,
+        reports: true,
+        review: true,
+        forMember: { select: { name: true, relation: true } },
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: { sender: { select: { role: true } } },
+        },
+        transactions: true,
+      },
+    });
+  }
+
+  // ─── ALL REVIEWS (for moderation) ───────────────
+  async listAllReviews(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [reviews, total] = await Promise.all([
+      this.prisma.review.findMany({
+        include: {
+          patient: { select: { name: true } },
+          doctor: { select: { name: true } },
+          booking: { select: { id: true, scheduledAt: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.review.count(),
+    ]);
+    return { data: reviews, meta: { total, page, limit } };
+  }
+
+  async deleteReview(reviewId: string) {
+    return this.prisma.review.delete({ where: { id: reviewId } });
+  }
+
+  // ─── ALL WALLET TRANSACTIONS ────────────────────
+  async listAllTransactions(page = 1, limit = 30) {
+    const skip = (page - 1) * limit;
+    const [txns, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.transaction.count(),
+    ]);
+    return { data: txns, meta: { total, page, limit } };
+  }
+
+  // ─── TRIGGER REFUND ─────────────────────────────
+  async triggerRefund(bookingId: string, reason: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { patient: true },
+    });
+    if (!booking) return null;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.transaction.create({
+        data: {
+          userId: booking.patient.userId,
+          bookingId: booking.id,
+          amount: booking.amountCharged,
+          type: 'REFUND',
+          description: `Admin refund: ${reason}`,
+        },
+      });
+      await tx.wallet.update({
+        where: { userId: booking.patient.userId },
+        data: { balance: { increment: booking.amountCharged } },
+      });
+      return { message: 'Refund processed', amount: booking.amountCharged };
+    });
+  }
+
+  // ─── DOCTOR SLOTS VIEW ──────────────────────────
+  async getDoctorSlots(doctorId: string) {
+    return this.prisma.doctorSlot.findMany({
+      where: { doctorId },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    });
+  }
+
+  // ─── FAMILY MEMBER MANAGEMENT ───────────────────
+  async editFamilyMember(memberId: string, data: any) {
+    return this.prisma.familyMember.update({ where: { id: memberId }, data });
+  }
+
+  async deleteFamilyMember(memberId: string) {
+    return this.prisma.familyMember.delete({ where: { id: memberId } });
+  }
+
+  // ─── EDIT PATIENT PROFILE ───────────────────────
+  async editPatientProfile(patientId: string, data: any) {
+    return this.prisma.patient.update({ where: { id: patientId }, data });
+  }
+
+  // ─── PAYOUT MANAGEMENT ──────────────────────────
+  async listAllPayouts(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [payouts, total] = await Promise.all([
+      this.prisma.doctorPayout.findMany({
+        include: { doctor: { select: { name: true, upiId: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.doctorPayout.count(),
+    ]);
+    return { data: payouts, meta: { total, page, limit } };
+  }
 }

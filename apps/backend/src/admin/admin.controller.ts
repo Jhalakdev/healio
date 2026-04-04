@@ -300,4 +300,78 @@ export class AdminController {
   setCommission(@Body('percent') percent: number) {
     return this.adminService.setCommissionRate(percent);
   }
+
+  // ─── PATIENT DETAIL ───────────────────────────────
+  @Get('patients/:id')
+  @ApiOperation({ summary: 'Get full patient detail (bookings, wallet, family, chat, reports)' })
+  getPatientDetail(@Param('id') id: string) {
+    return this.adminService.getPatientDetail(id);
+  }
+
+  @Patch('patients/:id')
+  @ApiOperation({ summary: 'Edit patient profile data' })
+  editPatient(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.editPatientProfile(id, body);
+  }
+
+  // ─── BOOKING DETAIL (with chat) ───────────────────
+  @Get('bookings/:id')
+  @ApiOperation({ summary: 'Get full booking detail with chat history' })
+  getBookingDetail(@Param('id') id: string) {
+    return this.adminService.getBookingDetail(id);
+  }
+
+  // ─── REVIEWS MODERATION ───────────────────────────
+  @Get('reviews')
+  @ApiOperation({ summary: 'List all reviews for moderation' })
+  listReviews(@Query('page') page?: number) {
+    return this.adminService.listAllReviews(page || 1);
+  }
+
+  @Delete('reviews/:id')
+  @ApiOperation({ summary: 'Delete a review (moderation)' })
+  deleteReview(@Param('id') id: string) {
+    return this.adminService.deleteReview(id);
+  }
+
+  // ─── WALLET TRANSACTIONS ──────────────────────────
+  @Get('transactions')
+  @ApiOperation({ summary: 'List all wallet transactions system-wide' })
+  listTransactions(@Query('page') page?: number) {
+    return this.adminService.listAllTransactions(page || 1);
+  }
+
+  // ─── REFUND TRIGGER ───────────────────────────────
+  @Post('bookings/:id/refund')
+  @ApiOperation({ summary: 'Trigger manual refund for a booking' })
+  refundBooking(@Param('id') id: string, @Body('reason') reason: string) {
+    return this.adminService.triggerRefund(id, reason);
+  }
+
+  // ─── DOCTOR SLOTS ─────────────────────────────────
+  @Get('doctors/:id/slots')
+  @ApiOperation({ summary: 'View doctor availability slots' })
+  getDoctorSlots(@Param('id') id: string) {
+    return this.adminService.getDoctorSlots(id);
+  }
+
+  // ─── FAMILY MEMBERS ───────────────────────────────
+  @Patch('family-members/:id')
+  @ApiOperation({ summary: 'Edit a family member' })
+  editFamilyMember(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.editFamilyMember(id, body);
+  }
+
+  @Delete('family-members/:id')
+  @ApiOperation({ summary: 'Delete a family member' })
+  deleteFamilyMember(@Param('id') id: string) {
+    return this.adminService.deleteFamilyMember(id);
+  }
+
+  // ─── PAYOUTS ──────────────────────────────────────
+  @Get('payouts')
+  @ApiOperation({ summary: 'List all doctor payouts' })
+  listPayouts(@Query('page') page?: number) {
+    return this.adminService.listAllPayouts(page || 1);
+  }
 }
