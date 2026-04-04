@@ -206,9 +206,10 @@ model Doctor {
   id                 String             @id @default(cuid())
   userId             String             @unique
   name               String
-  qualifications     String[]           // multiple degrees: ["MBBS", "MD Cardiology", "DM Gynecology"]
-  specialization     String?            // legacy text field (kept for backward compat)
-  categoryId         String?            // legacy single category (kept for backward compat)
+  qualifications     String[]           // multiple degrees
+  specialization     String?            // legacy
+  categoryId         String?            // legacy
+  onboardingStep     Int                @default(0) // 0=not started, 1=profile done, 2=specializations done, 3=documents uploaded, 4=submitted, 5=approved
   experience         Int?               // years
   consultationFee    Decimal            @default(0) @db.Decimal(10, 2)
   bio                String?

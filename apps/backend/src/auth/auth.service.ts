@@ -179,13 +179,24 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
-    if (user.doctor?.verificationStatus !== 'APPROVED') {
+    // SUSPENDED doctors cannot login at all
+    if (user.doctor?.verificationStatus === 'SUSPENDED') {
       throw new UnauthorizedException(
-        `Account is ${user.doctor?.verificationStatus?.toLowerCase() || 'pending verification'}`,
+        'Your account has been suspended. Contact support for more information.',
       );
     }
 
-    return this.generateTokens({ sub: user.id, role: user.role });
+    // PENDING and REJECTED doctors CAN login (to see status, reupload docs)
+    // APPROVED doctors have full access
+    // The dashboard will show locked/unlocked state based on verificationStatus
+
+    const tokens = await this.generateTokens({ sub: user.id, role: user.role });
+    return {
+      ...tokens,
+      verificationStatus: user.doctor?.verificationStatus || 'PENDING',
+      onboardingStep: user.doctor?.onboardingStep || 0,
+      rejectionReason: user.doctor?.rejectionReason || null,
+    };
   }
 
   // ─── ADMIN LOGIN ────────────────────────────────

@@ -61,6 +61,30 @@ export class DoctorsService {
     }));
   }
 
+  // Full profile for the logged-in doctor (includes everything)
+  async getFullProfile(userId: string) {
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { userId },
+      include: {
+        user: { select: { email: true, phone: true, createdAt: true } },
+        categories: { include: { category: { select: { id: true, name: true, icon: true } } } },
+        documents: { orderBy: { createdAt: 'desc' } },
+        slots: { orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }] },
+      },
+    });
+    if (!doctor) throw new NotFoundException('Doctor profile not found');
+
+    const isOnline = await this.redis.isDoctorOnline(doctor.id);
+    return { ...doctor, isOnline };
+  }
+
+  async updateOnboardingStep(userId: string, step: number) {
+    return this.prisma.doctor.update({
+      where: { userId },
+      data: { onboardingStep: step },
+    });
+  }
+
   async getDoctorProfile(doctorId: string) {
     const doctor = await this.prisma.doctor.findUnique({
       where: { id: doctorId },

@@ -49,6 +49,27 @@ export class DoctorsController {
     return this.doctorsService.getAvailableSlots(id, date, timezone);
   }
 
+  @Get('me/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get full doctor profile (status, onboarding step, documents, categories)' })
+  async getMyFullProfile(@CurrentUser() user: CurrentUserData) {
+    return this.doctorsService.getFullProfile(user.userId);
+  }
+
+  @Patch('me/onboarding')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update onboarding step' })
+  updateOnboarding(
+    @CurrentUser() user: CurrentUserData,
+    @Body('step') step: number,
+  ) {
+    return this.doctorsService.updateOnboardingStep(user.userId, step);
+  }
+
   @Patch('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.DOCTOR)
