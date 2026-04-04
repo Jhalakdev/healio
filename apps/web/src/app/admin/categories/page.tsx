@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { adminApi } from "@/lib/admin-api";
 import { getIcon } from "@/lib/icon-map";
-};
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
