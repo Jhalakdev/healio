@@ -18,7 +18,6 @@ export default function AdminDoctorsPage() {
   const [filter, setFilter] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [docs, setDocs] = useState<any[]>([]);
-  const [editingPrice, setEditingPrice] = useState<{ id: string; price: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => { loadDoctors(); }, []);
@@ -52,11 +51,7 @@ export default function AdminDoctorsPage() {
     if (expandedId) loadDocs(expandedId);
   };
 
-  const updatePrice = async (doctorId: string, price: string) => {
-    await adminApi(`/admin/doctors/${doctorId}/price`, { method: "PATCH", body: JSON.stringify({ price: Number(price) }) });
-    setEditingPrice(null);
-    loadDoctors();
-  };
+  // No per-doctor fee — consultation fee is set globally via Plans
 
   const toggleExpand = (docId: string) => {
     if (expandedId === docId) { setExpandedId(null); setDocs([]); }
@@ -161,7 +156,7 @@ export default function AdminDoctorsPage() {
                       {doc.isOnline && <Badge variant="online">Online</Badge>}
                     </div>
                     <p className="text-sm text-slate-500">
-                      {doc.specialization || "No specialization"} · {doc.experience || 0} yrs · ₹{doc.consultationFee}/consult
+                      {doc.specialization || "No specialization"} · {doc.experience || 0} yrs
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -217,29 +212,7 @@ export default function AdminDoctorsPage() {
                       </div>
                     </div>
 
-                    {/* Consultation fee editor */}
-                    <div>
-                      <h4 className="text-xs font-semibold text-slate-400 uppercase mb-3">Consultation Fee</h4>
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                        <IndianRupee className="w-5 h-5 text-teal-400" />
-                        {editingPrice?.id === doc.id ? (
-                          <div className="flex items-center gap-2">
-                            <Input className="w-24 h-8" type="number" value={editingPrice.price} onChange={(e) => setEditingPrice({ ...editingPrice, price: e.target.value })} />
-                            <Button size="sm" onClick={() => updatePrice(doc.id, editingPrice.price)}>
-                              <Save className="w-3 h-3" /> Save
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingPrice(null)}>Cancel</Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-extrabold">₹{doc.consultationFee}</span>
-                            <Button size="sm" variant="outline" onClick={() => setEditingPrice({ id: doc.id, price: String(doc.consultationFee) })}>
-                              Edit Price
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    {/* Note: consultation fee is set globally via Plans, not per doctor */}
 
                     {/* Payment / UPI details */}
                     <div>
