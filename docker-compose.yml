@@ -23,19 +23,20 @@ services:
     volumes:
       - redis_data:/data
 
+  # Self-hosted LiveKit — zero cloud cost, handles TURN/ICE/adaptive bitrate
   livekit:
     image: livekit/livekit-server:latest
     container_name: healio-livekit
     restart: unless-stopped
     ports:
-      - "7880:7880"
-      - "7881:7881"
-      - "7882:7882/udp"
+      - "7880:7880"   # WebSocket
+      - "7881:7881"   # RTC over TCP
+      - "7882:7882/udp" # RTC over UDP
     environment:
       LIVEKIT_KEYS: "devkey: secret"
     command: --dev --bind 0.0.0.0
 
-  # TURN server for NAT traversal (critical for video call quality)
+  # TURN server for NAT traversal (critical for Indian networks with CGNAT)
   coturn:
     image: coturn/coturn:latest
     container_name: healio-coturn

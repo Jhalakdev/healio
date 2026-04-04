@@ -12,7 +12,7 @@ export class VideoController {
   constructor(private videoService: VideoService) {}
 
   @Get(':bookingId/token')
-  @ApiOperation({ summary: 'Generate LiveKit video token' })
+  @ApiOperation({ summary: 'Generate LiveKit video token for a booking' })
   getToken(
     @Param('bookingId') bookingId: string,
     @CurrentUser() user: CurrentUserData,

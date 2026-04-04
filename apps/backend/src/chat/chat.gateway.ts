@@ -39,6 +39,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private prisma: PrismaService,
   ) {}
 
+  // ─── CONNECTION ───────────────────────────────────
+
   async handleConnection(client: AuthenticatedSocket) {
     try {
       const token =
@@ -65,7 +67,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(client: AuthenticatedSocket) {
     if (client.userId && client.role === 'DOCTOR') {
-      // Update doctor last seen on disconnect
       const doctor = await this.prisma.doctor.findUnique({
         where: { userId: client.userId },
       });
@@ -84,14 +85,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Client disconnected: ${client.userId}`);
   }
 
+  // ─── ROOM MANAGEMENT ─────────────────────────────
+
   @SubscribeMessage('join:booking')
   async handleJoinBooking(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { bookingId: string },
   ) {
     client.join(`booking:${data.bookingId}`);
+    client.to(`booking:${data.bookingId}`).emit('peer:joined', {
+      userId: client.userId,
+      role: client.role,
+    });
     this.logger.log(`${client.userId} joined booking:${data.bookingId}`);
   }
+
+  // ─── CHAT MESSAGES ────────────────────────────────
 
   @SubscribeMessage('chat:message')
   async handleMessage(
@@ -114,21 +123,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       fileUrl: data.fileUrl,
     });
 
-    // Broadcast to all in the booking room
     this.server.to(`booking:${data.bookingId}`).emit('chat:message', message);
   }
+
+  // ─── REPORT SHARING (IN-CALL) ────────────────────
 
   @SubscribeMessage('report:uploaded')
   async handleReportUploaded(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { bookingId: string; reportId: string },
   ) {
-    // Notify doctor in real-time when patient uploads a report during call
     this.server.to(`booking:${data.bookingId}`).emit('report:new', {
       reportId: data.reportId,
       uploadedBy: client.userId,
     });
   }
+
+  // ─── DOCTOR STATUS ────────────────────────────────
 
   @SubscribeMessage('doctor:online')
   async handleDoctorOnline(@ConnectedSocket() client: AuthenticatedSocket) {
@@ -148,6 +159,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit('doctor:status', { doctorId: doctor.id, isOnline: true });
   }
 
+  // ─── SESSION TIMER ────────────────────────────────
+
   @SubscribeMessage('session:timer')
   async handleTimerUpdate(
     @MessageBody() data: { bookingId: string; remainingSeconds: number },
@@ -157,7 +170,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  // Emit session extension to both participants
   emitSessionExtended(bookingId: string, newDurationMin: number) {
     this.server.to(`booking:${bookingId}`).emit('session:extended', {
       newDurationMin,

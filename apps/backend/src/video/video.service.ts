@@ -16,10 +16,15 @@ export class VideoService {
     this.apiSecret = config.get<string>('LIVEKIT_API_SECRET', 'secret');
   }
 
+  /**
+   * Generate a LiveKit token for joining a video room.
+   * Using self-hosted LiveKit (Docker / K8s) — zero cloud cost.
+   * LiveKit handles TURN/ICE/adaptive bitrate/reconnection automatically.
+   */
   async generateToken(
     bookingId: string,
     userId: string,
-  ): Promise<{ token: string; wsUrl: string; iceServers: any[] }> {
+  ): Promise<{ token: string; wsUrl: string }> {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -31,7 +36,7 @@ export class VideoService {
     if (!booking) throw new NotFoundException('Booking not found');
     if (!booking.livekitRoom) throw new NotFoundException('Room not created');
 
-    // Verify participant
+    // Verify participant is part of this booking
     const isDoctor = booking.doctor.userId === userId;
     const isPatient = booking.patient.userId === userId;
     if (!isDoctor && !isPatient) throw new ForbiddenException();
@@ -50,26 +55,15 @@ export class VideoService {
     const token = new AccessToken(this.apiKey, this.apiSecret, {
       identity: userId,
       name: participantName,
-      ttl: booking.durationMin * 60 + 300, // session duration + 5 min buffer
+      ttl: booking.durationMin * 60 + 300, // session + 5 min buffer
     });
     token.addGrant(grant);
 
     const wsUrl = this.config.get<string>('LIVEKIT_API_URL', 'ws://localhost:7880');
 
-    // ICE servers with TURN for NAT traversal
-    const iceServers = [
-      { urls: ['stun:stun.l.google.com:19302'] },
-      {
-        urls: [this.config.get<string>('TURN_URL', 'turn:localhost:3478')],
-        username: this.config.get<string>('TURN_USERNAME', 'healio'),
-        credential: this.config.get<string>('TURN_PASSWORD', 'healio_turn_dev'),
-      },
-    ];
-
     return {
       token: await token.toJwt(),
       wsUrl,
-      iceServers,
     };
   }
 }
