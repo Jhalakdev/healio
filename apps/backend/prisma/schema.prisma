@@ -141,19 +141,51 @@ model FavouriteDoctor {
   @@map("favourite_doctors")
 }
 
+// Specialists (doctor types: Cardiologist, Neurologist, etc.)
 model Category {
   id        String   @id @default(cuid())
   name      String   @unique
-  icon      String?  // emoji or URL
-  imageUrl  String?  // category illustration
+  icon      String?  // emoji fallback
+  imageUrl  String?  // uploaded icon/illustration
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  doctors DoctorCategory[]
+  doctors  DoctorCategory[]
+  symptoms SymptomSpecialist[]
 
   @@map("categories")
+}
+
+// Symptoms/Diseases (patient problems: Headache, Breathing problem, etc.)
+model Symptom {
+  id          String   @id @default(cuid())
+  name        String   @unique  // "Headache", "Irregular Periods", "Breathing Problem"
+  description String?
+  icon        String?  // emoji fallback
+  imageUrl    String?  // uploaded icon
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  specialists SymptomSpecialist[]
+
+  @@map("symptoms")
+}
+
+// Links symptoms to specialists (Headache → Neurologist, General Medicine)
+model SymptomSpecialist {
+  id         String @id @default(cuid())
+  symptomId  String
+  categoryId String
+
+  symptom  Symptom  @relation(fields: [symptomId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([symptomId, categoryId])
+  @@map("symptom_specialists")
 }
 
 // Many-to-many: a doctor can have multiple specializations/degrees

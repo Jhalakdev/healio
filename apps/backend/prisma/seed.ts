@@ -264,6 +264,45 @@ async function main() {
   });
   console.log('✅ Coupons created (WELCOME50, HEALTH20, FAMILY100)');
 
+  // Create symptoms/diseases and link to specialists
+  const symptomData = [
+    { name: 'Headache', icon: '🤕', specs: ['Neurology', 'General Medicine'] },
+    { name: 'Irregular Periods', icon: '🩸', specs: ['Gynecology', 'Endocrinology'] },
+    { name: 'Breathing Problem', icon: '😮‍💨', specs: ['General Medicine', 'Cardiology'] },
+    { name: 'Cough & Cold', icon: '🤧', specs: ['General Medicine', 'ENT'] },
+    { name: 'Digestion Issues', icon: '🤢', specs: ['General Medicine', 'Nephrology'] },
+    { name: 'Skin Rash', icon: '🔴', specs: ['Dermatology'] },
+    { name: 'Back Pain', icon: '😣', specs: ['Orthopedics', 'General Medicine'] },
+    { name: 'Eye Problem', icon: '👁️', specs: ['Ophthalmology'] },
+    { name: 'Ear Pain', icon: '👂', specs: ['ENT'] },
+    { name: 'Fever', icon: '🤒', specs: ['General Medicine', 'Pediatrics'] },
+    { name: 'Chest Pain', icon: '💔', specs: ['Cardiology', 'General Medicine'] },
+    { name: 'Anxiety & Stress', icon: '😰', specs: ['Psychiatry'] },
+    { name: 'Joint Pain', icon: '🦵', specs: ['Orthopedics'] },
+    { name: 'Child Health', icon: '👶', specs: ['Pediatrics'] },
+  ];
+
+  for (const s of symptomData) {
+    const symptom = await prisma.symptom.upsert({
+      where: { name: s.name },
+      update: { icon: s.icon },
+      create: { name: s.name, icon: s.icon },
+    });
+
+    // Link to specialist categories
+    for (const specName of s.specs) {
+      const cat = await prisma.category.findUnique({ where: { name: specName } });
+      if (cat) {
+        await prisma.symptomSpecialist.upsert({
+          where: { symptomId_categoryId: { symptomId: symptom.id, categoryId: cat.id } },
+          update: {},
+          create: { symptomId: symptom.id, categoryId: cat.id },
+        });
+      }
+    }
+  }
+  console.log('✅ 14 symptoms created and linked to specialists');
+
   // Set default app configs
   const configs = [
     { key: 'global_consultation_fee', value: 500 },

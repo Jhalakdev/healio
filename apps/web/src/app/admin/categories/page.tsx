@@ -47,11 +47,11 @@ export default function AdminCategoriesPage() {
     try { setCategories(await adminApi("/categories/all")); } catch {}
   };
 
-  const addCategory = async () => {
+  const addCategory = async (imageUrl?: string) => {
     if (!newName) return;
     await adminApi("/categories", {
       method: "POST",
-      body: JSON.stringify({ name: newName, icon: newIcon || "🏥" }),
+      body: JSON.stringify({ name: newName, icon: newIcon || "🏥", imageUrl: imageUrl || undefined }),
     });
     setNewName(""); setNewIcon(""); setShowAdd(false);
     loadCategories();
@@ -75,22 +75,38 @@ export default function AdminCategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Categories</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">Specialists</h1>
           <p className="text-slate-400 mt-1">
-            {categories.length} categories · {categories.filter(c => c.isActive).length} active
+            {categories.length} specialists · {categories.filter(c => c.isActive).length} active
           </p>
         </div>
         <Button onClick={() => setShowAdd(!showAdd)}>
-          <Plus className="w-4 h-4" /> Add Category
+          <Plus className="w-4 h-4" /> Add Specialist
         </Button>
       </div>
 
       {showAdd && (
         <Card>
-          <CardContent className="p-5 flex gap-3">
-            <Input placeholder="Category name (e.g. Urology)" value={newName} onChange={(e) => setNewName(e.target.value)} className="flex-1" />
-            <Input placeholder="Icon emoji" value={newIcon} onChange={(e) => setNewIcon(e.target.value)} className="w-24" />
-            <Button onClick={addCategory}><Save className="w-4 h-4" /> Save</Button>
+          <CardContent className="p-5 space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Specialist Name *</label>
+                <Input placeholder="e.g. Urology, Pulmonology" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1 block">Icon (emoji fallback)</label>
+                <Input placeholder="e.g. 🫘" value={newIcon} onChange={(e) => setNewIcon(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Icon Image URL (uploaded — overrides emoji)</label>
+              <Input placeholder="https://... or upload an icon image" id="cat-image-url" />
+              <p className="text-[10px] text-slate-500 mt-1">Upload a consistent icon image for professional look. If empty, emoji icon will be used.</p>
+            </div>
+            <Button onClick={() => {
+              const imageUrl = (document.getElementById("cat-image-url") as HTMLInputElement)?.value;
+              addCategory(imageUrl);
+            }}><Save className="w-4 h-4" /> Save Specialist</Button>
           </CardContent>
         </Card>
       )}
