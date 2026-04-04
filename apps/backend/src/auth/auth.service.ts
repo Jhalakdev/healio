@@ -156,7 +156,7 @@ export class AuthService {
     return { message: 'Registration successful. Pending admin approval.' };
   }
 
-  async doctorLogin(email: string, password: string): Promise<TokenPair> {
+  async doctorLogin(email: string, password: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { doctor: true },
