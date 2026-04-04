@@ -329,4 +329,188 @@ export class AdminService {
       },
     });
   }
+
+  // ─── FAQ MANAGEMENT ─────────────────────────────
+  async createFaq(data: { question: string; answer: string; category?: string; sortOrder?: number }) {
+    return this.prisma.faq.create({ data });
+  }
+
+  async listFaqs() {
+    return this.prisma.faq.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async updateFaq(id: string, data: any) {
+    return this.prisma.faq.update({ where: { id }, data });
+  }
+
+  async deleteFaq(id: string) {
+    return this.prisma.faq.delete({ where: { id } });
+  }
+
+  // ─── CMS PAGES (Terms, Privacy, About, Refund) ──
+  async upsertCmsPage(slug: string, data: { title: string; content: string }) {
+    return this.prisma.cmsPage.upsert({
+      where: { slug },
+      create: { slug, ...data },
+      update: data,
+    });
+  }
+
+  async getCmsPage(slug: string) {
+    return this.prisma.cmsPage.findUnique({ where: { slug } });
+  }
+
+  async listCmsPages() {
+    return this.prisma.cmsPage.findMany();
+  }
+
+  // ─── BANNERS / ANNOUNCEMENTS ────────────────────
+  async createBanner(data: {
+    title: string; subtitle?: string; imageUrl?: string;
+    linkUrl?: string; target?: string; startDate?: string; endDate?: string;
+  }) {
+    return this.prisma.banner.create({
+      data: {
+        ...data,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+      },
+    });
+  }
+
+  async listBanners() {
+    return this.prisma.banner.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async updateBanner(id: string, data: any) {
+    return this.prisma.banner.update({ where: { id }, data });
+  }
+
+  async deleteBanner(id: string) {
+    return this.prisma.banner.delete({ where: { id } });
+  }
+
+  // Active banners for app (filtered by date + target)
+  async getActiveBanners(target: string = 'all') {
+    const now = new Date();
+    return this.prisma.banner.findMany({
+      where: {
+        isActive: true,
+        target: { in: [target, 'all'] },
+        OR: [
+          { startDate: null },
+          { startDate: { lte: now } },
+        ],
+        AND: [
+          { OR: [{ endDate: null }, { endDate: { gte: now } }] },
+        ],
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  // ─── USER / PATIENT MANAGEMENT ──────────────────
+  async listPatients(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [patients, total] = await Promise.all([
+      this.prisma.patient.findMany({
+        include: {
+          user: { select: { phone: true, email: true, isActive: true, createdAt: true } },
+          _count: { select: { bookings: true, familyMembers: true } },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.patient.count(),
+    ]);
+    return { data: patients, meta: { total, page, limit } };
+  }
+
+  async deactivateUser(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
+  }
+
+  async activateUser(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: true },
+    });
+  }
+
+  // ─── VIEW ALL REPORTS / PRESCRIPTIONS ───────────
+  async listAllReports(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    return this.prisma.report.findMany({
+      include: {
+        patient: { select: { name: true } },
+        booking: { select: { id: true, doctorId: true } },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async listAllPrescriptions(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    return this.prisma.prescription.findMany({
+      include: {
+        booking: {
+          select: {
+            id: true,
+            patient: { select: { name: true } },
+            doctor: { select: { name: true } },
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ─── SEND NOTIFICATION TO USERS ─────────────────
+  async sendNotification(data: {
+    userId?: string; // specific user, or null for broadcast
+    type: string;
+    title: string;
+    body: string;
+  }) {
+    if (data.userId) {
+      return this.prisma.notification.create({
+        data: { userId: data.userId, type: data.type, title: data.title, body: data.body },
+      });
+    }
+
+    // Broadcast to all patients
+    const patients = await this.prisma.user.findMany({
+      where: { role: 'PATIENT', isActive: true },
+      select: { id: true },
+    });
+
+    return this.prisma.notification.createMany({
+      data: patients.map((p) => ({
+        userId: p.id,
+        type: data.type,
+        title: data.title,
+        body: data.body,
+      })),
+    });
+  }
+
+  // ─── COMMISSION RATE MANAGEMENT ─────────────────
+  async getCommissionRate() {
+    const config = await this.prisma.appConfig.findUnique({
+      where: { key: 'platform_commission_percent' },
+    });
+    return { commissionPercent: config?.value || 30 };
+  }
+
+  async setCommissionRate(percent: number) {
+    return this.setGlobalConfig('platform_commission_percent', percent);
+  }
 }

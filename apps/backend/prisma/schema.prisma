@@ -112,8 +112,7 @@ model FamilyMember {
   name            String
   relation        String   // "self", "spouse", "child", "parent", "sibling"
   isChild         Boolean  @default(false)
-  age             Int?
-  dob             DateTime?
+  dob             DateTime  // REQUIRED: age computed from this dynamically
   gender          String?
   bloodGroup      String?
   photoUrl        String?
@@ -376,6 +375,45 @@ model AppConfig {
   updatedAt DateTime @updatedAt
 
   @@map("app_configs")
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String   @default("general") // "general" | "booking" | "payment" | "doctor"
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+model CmsPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique // "terms", "privacy", "refund", "about"
+  title     String
+  content   String   // HTML or markdown
+  updatedAt DateTime @updatedAt
+
+  @@map("cms_pages")
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String?
+  linkUrl   String?  // deep link or URL
+  target    String   @default("all") // "all" | "patient" | "doctor"
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("banners")
 }
 
 model Coupon {

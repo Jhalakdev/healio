@@ -5,10 +5,23 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePatientProfileDto } from './dto/update-patient.dto';
+import { computeAge, isAdult } from '../common/utils/age';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
+
+  // Enrich any record with DOB to include computed age
+  private enrichWithAge<T extends { dob?: Date | null }>(record: T): T & { age: number | null } {
+    return {
+      ...record,
+      age: record.dob ? computeAge(record.dob) : null,
+    };
+  }
+
+  private enrichMembers(members: any[]) {
+    return members.map((m) => this.enrichWithAge(m));
+  }
 
   async getPatientProfile(userId: string) {
     const patient = await this.prisma.patient.findUnique({
@@ -61,9 +74,15 @@ export class UsersService {
       : null;
 
     return {
-      ...patient,
+      ...this.enrichWithAge(patient),
+      familyMembers: this.enrichMembers(patient.familyMembers),
       ownPlan: patient.subscriptions[0] || null,
-      familyGroup,
+      familyGroup: familyGroup
+        ? {
+            ...familyGroup,
+            members: this.enrichMembers(familyGroup.members),
+          }
+        : null,
     };
   }
 
@@ -142,8 +161,7 @@ export class UsersService {
       name: string;
       relation: string;
       isChild?: boolean;
-      age?: number;
-      dob?: string;
+      dob: string; // REQUIRED: age computed from this
       gender?: string;
       bloodGroup?: string;
       photoUrl?: string;
@@ -152,6 +170,15 @@ export class UsersService {
   ) {
     const patient = await this.prisma.patient.findUnique({ where: { userId } });
     if (!patient) throw new NotFoundException('Patient not found');
+
+    if (!data.dob) {
+      throw new BadRequestException('Date of birth is required');
+    }
+
+    const dobDate = new Date(data.dob);
+    const age = computeAge(dobDate);
+    const memberIsAdult = isAdult(dobDate);
+    const memberIsChild = data.isChild || !memberIsAdult;
 
     // Get current members
     const existing = await this.prisma.familyMember.findMany({
@@ -167,54 +194,56 @@ export class UsersService {
 
     const adultCount = existing.filter((m) => !m.isChild).length;
     const childCount = existing.filter((m) => m.isChild).length;
-    const isChild = data.isChild || false;
 
     // Adult limit: max 3
-    if (!isChild && adultCount >= 3) {
+    if (!memberIsChild && adultCount >= 3) {
       throw new BadRequestException(
         'Maximum 3 adult members allowed. You already have ' + adultCount,
       );
     }
 
     // Child limit: max 3
-    if (isChild && childCount >= 3) {
+    if (memberIsChild && childCount >= 3) {
       throw new BadRequestException(
         'Maximum 3 child members allowed. You already have ' + childCount,
       );
     }
 
-    // If age >= 18, phone verification is required
-    if (data.age && data.age >= 18 && !data.phoneNumber) {
+    // If 18+ from DOB, phone verification is required
+    if (memberIsAdult && !data.phoneNumber) {
       throw new BadRequestException(
-        'Phone number is required for members aged 18 or older',
+        `This person is ${age} years old. Phone number is required for members aged 18 or older.`,
       );
     }
 
-    return this.prisma.familyMember.create({
+    const member = await this.prisma.familyMember.create({
       data: {
         patientId: patient.id,
         name: data.name,
         relation: data.relation,
-        isChild,
-        age: data.age,
-        dob: data.dob ? new Date(data.dob) : undefined,
+        isChild: memberIsChild,
+        dob: dobDate,
         gender: data.gender,
         bloodGroup: data.bloodGroup,
         photoUrl: data.photoUrl,
         phoneNumber: data.phoneNumber,
-        isVerified: isChild && (!data.age || data.age < 18), // children auto-verified
+        isVerified: memberIsChild, // children auto-verified, adults need OTP
       },
     });
+
+    return this.enrichWithAge(member);
   }
 
   async getFamilyMembers(userId: string) {
     const patient = await this.prisma.patient.findUnique({ where: { userId } });
     if (!patient) throw new NotFoundException('Patient not found');
 
-    return this.prisma.familyMember.findMany({
+    const members = await this.prisma.familyMember.findMany({
       where: { patientId: patient.id },
       orderBy: { createdAt: 'asc' },
     });
+
+    return this.enrichMembers(members);
   }
 
   async removeFamilyMember(userId: string, memberId: string) {
