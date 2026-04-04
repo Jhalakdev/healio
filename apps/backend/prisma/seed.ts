@@ -190,6 +190,37 @@ async function main() {
   }
   console.log('✅ Plans created (₹399 single, ₹1000 family-3, ₹1500 family-5, ₹5999 yearly)');
 
+  // Create categories (specializations)
+  const categories = [
+    { name: 'Nephrology', icon: '🫘', sortOrder: 1 },
+    { name: 'Anesthesiology', icon: '💉', sortOrder: 2 },
+    { name: 'Orthopedics', icon: '🦴', sortOrder: 3 },
+    { name: 'Ophthalmology', icon: '👁️', sortOrder: 4 },
+    { name: 'Pediatrics', icon: '👶', sortOrder: 5 },
+    { name: 'Oncology', icon: '🎗️', sortOrder: 6 },
+    { name: 'Dermatology', icon: '🧴', sortOrder: 7 },
+    { name: 'Pathology', icon: '🔬', sortOrder: 8 },
+    { name: 'Psychiatry', icon: '🧠', sortOrder: 9 },
+    { name: 'General Surgery', icon: '🏥', sortOrder: 10 },
+    { name: 'Endocrinology', icon: '🦋', sortOrder: 11 },
+    { name: 'Radiology', icon: '📡', sortOrder: 12 },
+    { name: 'Cardiology', icon: '❤️', sortOrder: 13 },
+    { name: 'Geriatrics', icon: '👴', sortOrder: 14 },
+    { name: 'General Medicine', icon: '🩺', sortOrder: 15 },
+    { name: 'ENT', icon: '👂', sortOrder: 16 },
+    { name: 'Gynecology', icon: '🌸', sortOrder: 17 },
+    { name: 'Neurology', icon: '🧠', sortOrder: 18 },
+  ];
+
+  for (const cat of categories) {
+    await prisma.category.upsert({
+      where: { name: cat.name },
+      update: { icon: cat.icon, sortOrder: cat.sortOrder },
+      create: cat,
+    });
+  }
+  console.log('✅ 18 categories created');
+
   // Create demo coupons
   await prisma.coupon.upsert({
     where: { code: 'WELCOME50' },
@@ -199,6 +230,8 @@ async function main() {
       discountType: 'flat',
       discountValue: 50,
       maxUsage: 1000,
+      description: '₹50 off on your first consultation',
+      applicableFor: 'consultation',
       expiresAt: new Date('2027-12-31'),
     },
   });
@@ -209,11 +242,27 @@ async function main() {
       code: 'HEALTH20',
       discountType: 'percentage',
       discountValue: 20,
+      maxDiscountAmt: 200,
       maxUsage: 500,
+      description: '20% off up to ₹200',
+      applicableFor: 'all',
       expiresAt: new Date('2027-12-31'),
     },
   });
-  console.log('✅ Coupons created (WELCOME50, HEALTH20)');
+  await prisma.coupon.upsert({
+    where: { code: 'FAMILY100' },
+    update: {},
+    create: {
+      code: 'FAMILY100',
+      discountType: 'flat',
+      discountValue: 100,
+      maxUsage: 200,
+      description: '₹100 off on family plans only',
+      applicableFor: 'plan_purchase',
+      expiresAt: new Date('2027-12-31'),
+    },
+  });
+  console.log('✅ Coupons created (WELCOME50, HEALTH20, FAMILY100)');
 
   // Set default app configs
   const configs = [

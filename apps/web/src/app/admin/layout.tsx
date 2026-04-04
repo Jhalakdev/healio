@@ -29,7 +29,9 @@ const navItems = [
   { href: "/admin/finance", label: "Finance", icon: CreditCard },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/plans", label: "Plans", icon: CreditCard },
   { href: "/admin/coupons", label: "Coupons", icon: Tag },
+  { href: "/admin/categories", label: "Categories", icon: Stethoscope },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

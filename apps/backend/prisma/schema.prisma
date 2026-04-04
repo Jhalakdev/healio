@@ -142,12 +142,28 @@ model FavouriteDoctor {
   @@map("favourite_doctors")
 }
 
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String?  // emoji or URL
+  imageUrl  String?  // category illustration
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctors Doctor[]
+
+  @@map("categories")
+}
+
 model Doctor {
   id                 String             @id @default(cuid())
   userId             String             @unique
   name               String
   qualification      String?
-  specialization     String?
+  specialization     String?            // legacy text field
+  categoryId         String?            // links to admin-managed Category
   experience         Int?               // years
   consultationFee    Decimal            @default(0) @db.Decimal(10, 2)
   bio                String?
@@ -163,6 +179,7 @@ model Doctor {
   updatedAt          DateTime           @updatedAt
 
   avgResponseMin     Int?               // avg response time in minutes
+  category  Category?         @relation(fields: [categoryId], references: [id])
   user      User              @relation(fields: [userId], references: [id])
   bookings  Booking[]         @relation("doctorBookings")
   slots     DoctorSlot[]
@@ -364,10 +381,16 @@ model AppConfig {
 model Coupon {
   id             String    @id @default(cuid())
   code           String    @unique
-  discountType   String    // "flat" | "percentage"
-  discountValue  Decimal   @db.Decimal(10, 2)
+  discountType   String    // "flat" | "percentage" | "upto"
+  discountValue  Decimal   @db.Decimal(10, 2) // amount or % value
+  maxDiscountAmt Decimal?  @db.Decimal(10, 2) // for "upto" type: max discount cap
+  minOrderAmt    Decimal?  @db.Decimal(10, 2) // minimum order to apply
   maxUsage       Int       @default(0) // 0 = unlimited
   usedCount      Int       @default(0)
+  perUserLimit   Int       @default(1) // max times one user can use
+  applicablePlans String[] // plan IDs this coupon works with (empty = all plans)
+  applicableFor  String    @default("all") // "all" | "consultation" | "plan_purchase"
+  description    String?
   expiresAt      DateTime?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
