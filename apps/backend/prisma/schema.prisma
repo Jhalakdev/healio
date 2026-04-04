@@ -188,6 +188,8 @@ model Doctor {
   bankName           String?
   accountHolderName  String?
   verificationStatus VerificationStatus @default(PENDING)
+  rejectionReason    String?            // why the doctor was rejected (mandatory on rejection)
+  verifiedAt         DateTime?          // when approved
   isOnline           Boolean            @default(false)
   lastSeenAt         DateTime?
   maxSessionsPerDay  Int                @default(20)

@@ -39,12 +39,13 @@ export class AdminController {
   }
 
   @Patch('doctors/:id/status')
-  @ApiOperation({ summary: 'Approve/Reject/Suspend doctor' })
+  @ApiOperation({ summary: 'Approve/Reject/Suspend doctor (reason mandatory for rejection)' })
   updateDoctorStatus(
     @Param('id') id: string,
     @Body('status') status: VerificationStatus,
+    @Body('reason') reason?: string,
   ) {
-    return this.adminService.updateDoctorStatus(id, status);
+    return this.adminService.updateDoctorStatus(id, status, reason);
   }
 
   @Post('doctors/:id/block')
@@ -281,10 +282,14 @@ export class AdminController {
     return this.adminService.listAllPrescriptions(page || 1);
   }
 
-  // ─── NOTIFICATIONS ────────────────────────────────
+  // ─── NOTIFICATIONS (targeted) ──────────────────────
   @Post('notifications/send')
-  @ApiOperation({ summary: 'Send notification (single user or broadcast)' })
-  sendNotification(@Body() body: { userId?: string; type: string; title: string; body: string }) {
+  @ApiOperation({ summary: 'Send notification — targets: all_patients, all_doctors, specific_user, category_doctors' })
+  sendNotification(@Body() body: {
+    target: string; // "all_patients" | "all_doctors" | "specific_user" | "category_doctors"
+    userId?: string; categoryId?: string;
+    type: string; title: string; body: string;
+  }) {
     return this.adminService.sendNotification(body);
   }
 

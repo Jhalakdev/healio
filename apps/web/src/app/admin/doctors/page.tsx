@@ -29,8 +29,18 @@ export default function AdminDoctorsPage() {
   };
 
   const updateStatus = async (doctorId: string, status: string) => {
-    await adminApi(`/admin/doctors/${doctorId}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
-    loadDoctors();
+    let reason: string | undefined;
+    if (status === "REJECTED") {
+      reason = prompt("Rejection reason (mandatory):\nThis will be shown to the doctor.");
+      if (!reason) return; // cancelled
+    }
+    try {
+      await adminApi(`/admin/doctors/${doctorId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status, ...(reason && { reason }) }),
+      });
+      loadDoctors();
+    } catch (e: any) { alert(e.message); }
   };
 
   const loadDocs = async (doctorId: string) => {
@@ -283,6 +293,14 @@ export default function AdminDoctorsPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Rejection reason */}
+                    {doc.rejectionReason && (
+                      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                        <h4 className="text-xs font-semibold text-red-400 uppercase mb-2">Rejection Reason</h4>
+                        <p className="text-sm text-red-300">{doc.rejectionReason}</p>
+                      </div>
+                    )}
 
                     {/* Bio */}
                     {doc.bio && (

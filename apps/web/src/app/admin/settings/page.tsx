@@ -66,22 +66,55 @@ export default function AdminSettingsPage() {
         ))}
       </div>
 
-      {/* Send notification */}
+      {/* Send notification — targeted */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" /> Broadcast Notification</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Input placeholder="Title" id="notif-title" />
-          <Input placeholder="Body" id="notif-body" />
-          <Button onClick={async () => {
+        <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" /> Send Notifications</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Send To *</label>
+            <select id="notif-target" className="w-full px-3 py-2 rounded-xl border text-sm h-11">
+              <option value="all_patients">All Patients</option>
+              <option value="all_doctors">All Doctors</option>
+              <option value="category_doctors">Doctors in Specific Category</option>
+              <option value="specific_user">Specific User (by ID)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">User ID (for specific user only)</label>
+            <Input placeholder="User ID (only if targeting specific user)" id="notif-userid" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Category ID (for category doctors only)</label>
+            <Input placeholder="Category ID (only if targeting category)" id="notif-catid" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Title *</label>
+            <Input placeholder="Notification title" id="notif-title" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Message *</label>
+            <textarea id="notif-body" placeholder="Notification message..." className="w-full p-3 rounded-xl border text-sm min-h-[80px]" />
+          </div>
+          <Button className="w-full" onClick={async () => {
+            const target = (document.getElementById("notif-target") as HTMLSelectElement).value;
+            const userId = (document.getElementById("notif-userid") as HTMLInputElement).value;
+            const categoryId = (document.getElementById("notif-catid") as HTMLInputElement).value;
             const title = (document.getElementById("notif-title") as HTMLInputElement).value;
-            const body = (document.getElementById("notif-body") as HTMLInputElement).value;
-            if (!title || !body) return alert("Fill title and body");
-            await adminApi("/admin/notifications/send", {
-              method: "POST", body: JSON.stringify({ type: "announcement", title, body }),
-            });
-            alert("Notification sent to all patients!");
+            const body = (document.getElementById("notif-body") as HTMLTextAreaElement).value;
+            if (!title || !body) return alert("Fill title and message");
+            try {
+              const result = await adminApi("/admin/notifications/send", {
+                method: "POST",
+                body: JSON.stringify({
+                  target, type: "admin_notification", title, body,
+                  ...(userId && { userId }),
+                  ...(categoryId && { categoryId }),
+                }),
+              });
+              alert(`Sent! ${(result as any)?.sent || 0} users notified.`);
+            } catch (e: any) { alert(e.message); }
           }}>
-            <Bell className="w-4 h-4" /> Send to All Patients
+            <Bell className="w-4 h-4" /> Send Notification
           </Button>
         </CardContent>
       </Card>

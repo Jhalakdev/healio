@@ -65,11 +65,47 @@ export class AdminService {
     });
   }
 
-  async updateDoctorStatus(doctorId: string, status: VerificationStatus) {
-    return this.prisma.doctor.update({
+  async updateDoctorStatus(doctorId: string, status: VerificationStatus, reason?: string) {
+    if (status === 'REJECTED' && !reason) {
+      throw new BadRequestException('Rejection reason is mandatory');
+    }
+
+    const doctor = await this.prisma.doctor.update({
       where: { id: doctorId },
-      data: { verificationStatus: status },
+      data: {
+        verificationStatus: status,
+        rejectionReason: status === 'REJECTED' ? reason : null,
+        verifiedAt: status === 'APPROVED' ? new Date() : undefined,
+      },
+      include: { user: true },
     });
+
+    // Send notification to doctor
+    if (doctor.user) {
+      const title = status === 'APPROVED'
+        ? 'Application Approved!'
+        : status === 'REJECTED'
+        ? 'Application Needs Attention'
+        : `Account ${status.toLowerCase()}`;
+
+      const body = status === 'APPROVED'
+        ? 'Congratulations! Your doctor profile has been verified. You can now log in and start consulting patients.'
+        : status === 'REJECTED'
+        ? `Your application was not approved. Reason: ${reason}`
+        : `Your account status has been updated to ${status.toLowerCase()}.`;
+
+      await this.prisma.notification.create({
+        data: {
+          userId: doctor.userId,
+          type: 'account_status',
+          title,
+          body,
+          data: { status, reason },
+        },
+      });
+    }
+
+    return doctor;
   }
 
   async blockDoctor(doctorId: string) {
@@ -473,33 +509,64 @@ export class AdminService {
     });
   }
 
-  // ─── SEND NOTIFICATION TO USERS ─────────────────
+  // ─── SEND NOTIFICATION (targeted) ────────────────
   async sendNotification(data: {
-    userId?: string; // specific user, or null for broadcast
+    target: string; // "all_patients" | "all_doctors" | "specific_user" | "category_doctors"
+    userId?: string;
+    categoryId?: string;
     type: string;
     title: string;
     body: string;
   }) {
-    if (data.userId) {
-      return this.prisma.notification.create({
-        data: { userId: data.userId, type: data.type, title: data.title, body: data.body },
-      });
+    let userIds: string[] = [];
+
+    switch (data.target) {
+      case 'specific_user':
+        if (!data.userId) throw new BadRequestException('userId required for specific_user target');
+        userIds = [data.userId];
+        break;
+
+      case 'all_patients':
+        const patients = await this.prisma.user.findMany({
+          where: { role: 'PATIENT', isActive: true },
+          select: { id: true },
+        });
+        userIds = patients.map(p => p.id);
+        break;
+
+      case 'all_doctors':
+        const doctors = await this.prisma.doctor.findMany({
+          where: { verificationStatus: 'APPROVED' },
+          select: { userId: true },
+        });
+        userIds = doctors.map(d => d.userId);
+        break;
+
+      case 'category_doctors':
+        if (!data.categoryId) throw new BadRequestException('categoryId required');
+        const catDocs = await this.prisma.doctorCategory.findMany({
+          where: { categoryId: data.categoryId },
+          include: { doctor: { select: { userId: true } } },
+        });
+        userIds = catDocs.map(d => d.doctor.userId);
+        break;
+
+      default:
+        throw new BadRequestException('Invalid target');
     }
 
-    // Broadcast to all patients
-    const patients = await this.prisma.user.findMany({
-      where: { role: 'PATIENT', isActive: true },
-      select: { id: true },
-    });
+    if (userIds.length === 0) return { sent: 0, message: 'No recipients found' };
 
-    return this.prisma.notification.createMany({
-      data: patients.map((p) => ({
-        userId: p.id,
+    const result = await this.prisma.notification.createMany({
+      data: userIds.map((userId) => ({
+        userId,
         type: data.type,
         title: data.title,
         body: data.body,
       })),
     });
+
+    return { sent: result.count, target: data.target, message: `Notification sent to ${result.count} users` };
   }
 
   // ─── COMMISSION RATE MANAGEMENT ─────────────────
