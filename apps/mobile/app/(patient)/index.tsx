@@ -13,28 +13,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fontSize, spacing, radius } from '../../lib/theme';
 
 const specializations = [
-  { id: '1', name: 'Neurology', emoji: '🧠' },
-  { id: '2', name: 'Cardiology', emoji: '❤️' },
-  { id: '3', name: 'Orthopedics', emoji: '🦴' },
-  { id: '4', name: 'Pathology', emoji: '🔬' },
+  { id: '1', name: 'Neurology', icon: 'brain-outline' as const, color: '#7c3aed' },
+  { id: '2', name: 'Cardiology', icon: 'heart-outline' as const, color: '#e11d48' },
+  { id: '3', name: 'Orthopedics', icon: 'body-outline' as const, color: '#f59e0b' },
+  { id: '4', name: 'Pathology', icon: 'flask-outline' as const, color: '#10b981' },
 ];
 
 const popularDoctors = [
   {
     id: '1', name: 'Dr. Priya Sharma', spec: 'General Medicine',
-    fee: 500, rating: 4.9, reviews: 2530, online: true,
+    rating: 4.9, reviews: 2530, online: true,
   },
   {
     id: '2', name: 'Dr. Amit Verma', spec: 'Dermatology',
-    fee: 700, rating: 4.8, reviews: 2530, online: true,
+    rating: 4.8, reviews: 1820, online: true,
   },
   {
     id: '3', name: 'Dr. Neha Gupta', spec: 'Pediatrics',
-    fee: 600, rating: 4.9, reviews: 2530, online: false,
+    rating: 4.9, reviews: 2100, online: true,
   },
   {
     id: '4', name: 'Dr. Sanjay Kumar', spec: 'ENT',
-    fee: 800, rating: 4.8, reviews: 2530, online: true,
+    rating: 4.8, reviews: 1540, online: true,
   },
 ];
 
@@ -115,8 +115,8 @@ export default function PatientHome() {
         <View style={styles.specRow}>
           {specializations.map((s) => (
             <Pressable key={s.id} style={styles.specItem}>
-              <View style={styles.specCircle}>
-                <Text style={styles.specEmoji}>{s.emoji}</Text>
+              <View style={[styles.specCircle, { backgroundColor: s.color + '15' }]}>
+                <Ionicons name={s.icon} size={26} color={s.color} />
               </View>
               <Text style={styles.specName}>{s.name}</Text>
             </Pressable>
@@ -158,9 +158,10 @@ export default function PatientHome() {
             </View>
 
             <View style={styles.docRight}>
-              <Text style={styles.feeLabel}>Fees</Text>
-              <Text style={styles.feeValue}>₹{doc.fee.toFixed(2)}</Text>
-              <Pressable style={styles.bookNowBtn}>
+              <Pressable
+                style={styles.bookNowBtn}
+                onPress={() => router.push('/(patient)/doctor-profile')}
+              >
                 <Text style={styles.bookNowText}>Book Now</Text>
               </Pressable>
             </View>
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   },
   avatarSmallText: { color: colors.white, fontWeight: '700', fontSize: 14 },
   welcomeText: { fontSize: 12, color: colors.gray400 },
-  userName: { fontSize: 18, fontWeight: '700', color: colors.text },
+  userName: { fontSize: 20, fontWeight: '800', color: colors.text },
   headerRight: { flexDirection: 'row', gap: 8 },
   iconBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray100,
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
   // Section
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  sectionTitle: { fontSize: 19, fontWeight: '700', color: colors.text, marginBottom: 4 },
   seeAll: { fontSize: 13, color: colors.primary, fontWeight: '600' },
 
   // Specializations
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: '#e6f7f5',
   },
-  specEmoji: { fontSize: 26 },
+  // specEmoji removed — using Ionicons now
   specName: { fontSize: 11, color: colors.gray600, fontWeight: '500' },
 
   // Doctor card
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     borderRadius: 6, backgroundColor: '#10b981', borderWidth: 2, borderColor: colors.white,
   },
   docInfo: { flex: 1 },
-  docName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  docName: { fontSize: 16, fontWeight: '700', color: colors.text },
   docSpec: { fontSize: 12, color: colors.gray400, marginTop: 2 },
   docRating: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   ratingText: { fontSize: 12, color: colors.gray500, fontWeight: '500' },

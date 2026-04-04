@@ -8,10 +8,8 @@ import { getToken } from '../lib/api';
 
 export default function Welcome() {
   useEffect(() => {
-    // Auto-redirect if already logged in
-    getToken().then((token) => {
-      if (token) router.replace('/(patient)');
-    });
+    const token = getToken();
+    if (token) router.replace('/(patient)');
   }, []);
 
   return (

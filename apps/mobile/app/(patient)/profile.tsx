@@ -5,12 +5,17 @@ import { colors } from '../../lib/theme';
 import { clearTokens } from '../../lib/api';
 
 const menuItems = [
-  { icon: 'settings-outline' as const, label: 'General Settings' },
-  { icon: 'card-outline' as const, label: 'Payments History' },
-  { icon: 'help-circle-outline' as const, label: 'Frequently Asked Question' },
-  { icon: 'heart-outline' as const, label: 'Favourite Doctors' },
-  { icon: 'document-text-outline' as const, label: 'Test Reports' },
-  { icon: 'document-outline' as const, label: 'Terms & Conditions' },
+  { icon: 'person-circle-outline' as const, label: 'My Profile', route: '/(patient)/my-profile' },
+  { icon: 'wallet-outline' as const, label: 'Wallet', route: '/(patient)/wallet' },
+  { icon: 'calendar-outline' as const, label: 'Booking History', route: '/(patient)/appointments' },
+  { icon: 'people-outline' as const, label: 'Family Members', route: '/(patient)/family-members' },
+  { icon: 'heart-outline' as const, label: 'Favourite Doctors', route: null },
+  { icon: 'pricetags-outline' as const, label: 'Plans & Pricing', route: '/(patient)/plans' },
+  { icon: 'settings-outline' as const, label: 'General Settings', route: null },
+  { icon: 'help-circle-outline' as const, label: 'FAQ', route: null },
+  { icon: 'document-outline' as const, label: 'Terms & Conditions', route: null },
+  { icon: 'shield-checkmark-outline' as const, label: 'Privacy Policy', route: null },
+  { icon: 'information-circle-outline' as const, label: 'About Us', route: null },
 ];
 
 export default function MoreTab() {
@@ -33,7 +38,11 @@ export default function MoreTab() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {menuItems.map((item) => (
-          <Pressable key={item.label} style={styles.menuItem}>
+          <Pressable
+            key={item.label}
+            style={styles.menuItem}
+            onPress={() => item.route && router.push(item.route as any)}
+          >
             <View style={styles.menuIcon}>
               <Ionicons name={item.icon} size={22} color={colors.primary} />
             </View>

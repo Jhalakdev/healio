@@ -4,31 +4,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, spacing, radius } from '../../lib/theme';
 
 const specializations = [
-  { name: 'Nephrology', emoji: '🫘' },
-  { name: 'Anesthesiology', emoji: '💉' },
-  { name: 'Orthopedics', emoji: '🦴' },
-  { name: 'Ophthalmology', emoji: '👁️' },
-  { name: 'Pediatrics', emoji: '👶' },
-  { name: 'Oncology', emoji: '🎗️' },
-  { name: 'Dermatology', emoji: '🧴' },
-  { name: 'Pathology', emoji: '🔬' },
-  { name: 'Psychiatry', emoji: '🧠' },
-  { name: 'General Surgery', emoji: '🏥' },
-  { name: 'Endocrinology', emoji: '🦋' },
-  { name: 'Radiology', emoji: '📡' },
-  { name: 'Surgery', emoji: '🔪' },
-  { name: 'Cardiology', emoji: '❤️' },
-  { name: 'Geriatrics', emoji: '👴' },
+  { name: 'Nephrology', icon: 'water-outline' as const, color: '#3b82f6' },
+  { name: 'Anesthesiology', icon: 'medical-outline' as const, color: '#8b5cf6' },
+  { name: 'Orthopedics', icon: 'body-outline' as const, color: '#f59e0b' },
+  { name: 'Ophthalmology', icon: 'eye-outline' as const, color: '#06b6d4' },
+  { name: 'Pediatrics', icon: 'happy-outline' as const, color: '#ec4899' },
+  { name: 'Oncology', icon: 'ribbon-outline' as const, color: '#ef4444' },
+  { name: 'Dermatology', icon: 'hand-left-outline' as const, color: '#f97316' },
+  { name: 'Pathology', icon: 'flask-outline' as const, color: '#10b981' },
+  { name: 'Psychiatry', icon: 'brain-outline' as const, color: '#7c3aed' },
+  { name: 'General Surgery', icon: 'medkit-outline' as const, color: '#dc2626' },
+  { name: 'Endocrinology', icon: 'fitness-outline' as const, color: '#14b8a6' },
+  { name: 'Radiology', icon: 'scan-outline' as const, color: '#6366f1' },
+  { name: 'Surgery', icon: 'cut-outline' as const, color: '#be123c' },
+  { name: 'Cardiology', icon: 'heart-outline' as const, color: '#e11d48' },
+  { name: 'Geriatrics', icon: 'accessibility-outline' as const, color: '#0d9488' },
 ];
 
 const filterTags = ['Neuralist', 'Neuromedicine', 'Medicine', 'Psychiatry'];
 
 const doctors = [
-  { id: '1', name: 'Dr. Aaliya Y.', spec: 'MBBS, BCS', fee: 500, rating: 4.5, reviews: 2530 },
-  { id: '2', name: 'Dr. Amira', spec: 'BDS, Dentistry', fee: 500, rating: 4.5, reviews: 2530 },
-  { id: '3', name: 'Dr. Anna G.', spec: 'Cardiologist', fee: 500, rating: 4.5, reviews: 2530 },
-  { id: '4', name: 'Dr. Anne.', spec: 'Hepatologist', fee: 500, rating: 4.5, reviews: 2530 },
-  { id: '5', name: 'Dr. Andrea H.', spec: 'Neurosurgery', fee: 500, rating: 4.5, reviews: 2530 },
+  { id: '1', name: 'Dr. Priya Sharma', spec: 'General Medicine', rating: 4.9, reviews: 2530, online: true },
+  { id: '2', name: 'Dr. Amit Verma', spec: 'Dermatology', rating: 4.8, reviews: 1820, online: true },
+  { id: '3', name: 'Dr. Anna G.', spec: 'Cardiologist', rating: 4.7, reviews: 980, online: true },
+  { id: '4', name: 'Dr. Neha Gupta', spec: 'Pediatrics', rating: 4.9, reviews: 2100, online: true },
+  { id: '5', name: 'Dr. Sanjay K.', spec: 'ENT', rating: 4.6, reviews: 1540, online: true },
 ];
 
 export default function DoctorsTab() {
@@ -49,8 +49,8 @@ export default function DoctorsTab() {
       <View style={styles.specGrid}>
         {specializations.map((s) => (
           <Pressable key={s.name} style={styles.specItem}>
-            <View style={styles.specCircle}>
-              <Text style={styles.specEmoji}>{s.emoji}</Text>
+            <View style={[styles.specCircle, { backgroundColor: s.color + '15' }]}>
+              <Ionicons name={s.icon} size={26} color={s.color} />
             </View>
             <Text style={styles.specName}>{s.name}</Text>
           </Pressable>
@@ -79,19 +79,21 @@ export default function DoctorsTab() {
             style={styles.doctorCard}
             onPress={() => router.push('/(patient)/doctor-profile')}
           >
-            <View style={styles.docAvatar}>
-              <Text style={styles.docAvatarText}>{doc.name.split(' ')[1]?.[0] || 'D'}</Text>
+            <View style={{ position: 'relative' }}>
+              <View style={styles.docAvatar}>
+                <Text style={styles.docAvatarText}>{doc.name.split(' ').slice(1).map(n => n[0]).join('')}</Text>
+              </View>
+              {doc.online && <View style={styles.onlineDot} />}
             </View>
             <View style={styles.docInfo}>
               <Text style={styles.docName}>{doc.name}</Text>
               <Text style={styles.docSpec}>{doc.spec}</Text>
               <View style={styles.docRating}>
-                <Ionicons name="star" size={12} color="#f59e0b" />
-                <Text style={styles.ratingText}>{doc.rating} ({doc.reviews})</Text>
+                <Ionicons name="star" size={13} color="#f59e0b" />
+                <Text style={styles.ratingText}>{doc.rating} ({doc.reviews.toLocaleString()})</Text>
               </View>
             </View>
             <View style={styles.docRight}>
-              <Text style={styles.feeLabel}>Fees <Text style={styles.feeValue}>₹{doc.fee.toFixed(2)}</Text></Text>
               <Pressable style={styles.bookNowBtn}>
                 <Text style={styles.bookNowText}>Book Now</Text>
               </Pressable>
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
   shareBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray100,
     alignItems: 'center', justifyContent: 'center',
@@ -126,8 +128,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#e6f7f5',
     alignItems: 'center', justifyContent: 'center',
   },
-  specEmoji: { fontSize: 28 },
-  specName: { fontSize: 11, color: colors.gray500, fontWeight: '500', marginTop: 6, textAlign: 'center' },
+  specName: { fontSize: 12, color: colors.gray600, fontWeight: '600', marginTop: 6, textAlign: 'center' },
   filterRow: { paddingLeft: 20, marginBottom: 8 },
   filterTag: {
     paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20,
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   filterTagTextActive: { color: colors.white, fontWeight: '600' },
   doctorsList: { paddingHorizontal: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   seeAll: { fontSize: 13, color: colors.primary, fontWeight: '600' },
   doctorCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -149,16 +150,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   docAvatarText: { fontSize: 18, fontWeight: '700', color: '#0284c7' },
+  onlineDot: {
+    position: 'absolute', bottom: 1, right: 1, width: 14, height: 14,
+    borderRadius: 7, backgroundColor: '#10b981', borderWidth: 2, borderColor: colors.white,
+  },
   docInfo: { flex: 1 },
-  docName: { fontSize: 15, fontWeight: '700', color: colors.text },
-  docSpec: { fontSize: 12, color: colors.gray400, marginTop: 2 },
+  docName: { fontSize: 16, fontWeight: '700', color: colors.text },
+  docSpec: { fontSize: 13, color: colors.gray500, marginTop: 2 },
   docRating: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  ratingText: { fontSize: 12, color: colors.gray500 },
-  docRight: { alignItems: 'flex-end', gap: 6 },
-  feeLabel: { fontSize: 12, color: colors.gray400 },
-  feeValue: { fontWeight: '700', color: colors.text },
+  ratingText: { fontSize: 13, color: colors.gray500, fontWeight: '500' },
+  docRight: { alignItems: 'flex-end' },
   bookNowBtn: {
-    backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 7, borderRadius: 8,
+    backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 10,
   },
   bookNowText: { fontSize: 12, fontWeight: '700', color: colors.white },
 });

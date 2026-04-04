@@ -5,13 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
 
 const doctor = {
-  name: 'Dr. Eion Morgan',
-  qualification: 'MBBS, MD (Neurology)',
-  rating: 4.5,
+  name: 'Dr. Priya Sharma',
+  qualification: 'MBBS, MD (General Medicine)',
+  rating: 4.9,
   reviews: 2530,
-  tags: ['Neuralist', 'Neuromedicine', 'Medicine'],
-  bio: 'Eion Morgan is a dedicated pediatrician with over 15 years of experience in caring for children\'s health. She is passionate about ensuring the well-being of your little ones and believes in a holistic approach.',
-  fee: 500,
+  tags: ['General Medicine', 'Family Health', 'Preventive Care'],
+  bio: 'Dr. Priya Sharma is a dedicated physician with over 8 years of experience. She specializes in preventive healthcare, chronic disease management, and family medicine. Available for instant and scheduled consultations.',
+  isOnline: true,
+  patientsServed: 2340,
 };
 
 const dates = [
@@ -23,10 +24,11 @@ const dates = [
   { day: 20, label: 'Sat', active: false },
 ];
 
+// 15-minute slots — no idle time
 const timeSlots = {
-  Morning: ['09:00 AM', '10:00 AM', '11:00 AM'],
-  Afternoon: ['12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM'],
-  Evening: ['05:00 PM', '06:00 PM', '07:00 PM'],
+  Morning: ['09:00 AM', '09:15 AM', '09:30 AM', '09:45 AM', '10:00 AM', '10:15 AM', '10:30 AM', '10:45 AM', '11:00 AM', '11:15 AM', '11:30 AM', '11:45 AM'],
+  Afternoon: ['12:00 PM', '12:15 PM', '12:30 PM', '12:45 PM', '01:00 PM', '01:15 PM', '01:30 PM', '02:00 PM', '02:15 PM', '02:30 PM', '02:45 PM', '03:00 PM'],
+  Evening: ['04:00 PM', '04:15 PM', '04:30 PM', '04:45 PM', '05:00 PM', '05:15 PM', '05:30 PM', '05:45 PM', '06:00 PM', '06:15 PM', '06:30 PM'],
 };
 
 type TimeOfDay = 'Morning' | 'Afternoon' | 'Evening';
@@ -35,6 +37,7 @@ export default function DoctorProfileScreen() {
   const [selectedDate, setSelectedDate] = useState(15);
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<TimeOfDay>('Afternoon');
   const [selectedSlot, setSelectedSlot] = useState<string | null>('02:00 PM');
+  const [isFavourite, setIsFavourite] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -45,13 +48,16 @@ export default function DoctorProfileScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Doctor Profile</Text>
-          <View style={{ width: 40 }} />
+          <Pressable onPress={() => setIsFavourite(!isFavourite)} style={styles.favBtn}>
+            <Ionicons name={isFavourite ? 'heart' : 'heart-outline'} size={22} color={isFavourite ? '#ef4444' : colors.gray400} />
+          </Pressable>
         </View>
 
         {/* Doctor info */}
         <View style={styles.doctorSection}>
           <View style={styles.docAvatar}>
-            <Text style={styles.docAvatarText}>EM</Text>
+            <Text style={styles.docAvatarText}>PS</Text>
+            {doctor.isOnline && <View style={styles.onlineBadge} />}
           </View>
           <Text style={styles.docName}>{doctor.name}</Text>
           <Text style={styles.docQualif}>{doctor.qualification}</Text>
@@ -134,8 +140,9 @@ export default function DoctorProfileScreen() {
 
       {/* Bottom CTA */}
       <View style={styles.bottomBar}>
-        <Pressable style={styles.bookBtn}>
-          <Text style={styles.bookBtnText}>Book Appointment (₹{doctor.fee.toFixed(2)})</Text>
+        <Pressable style={styles.bookBtn} onPress={() => router.push('/(patient)/booking-confirm')}>
+          <Ionicons name="videocam" size={20} color={colors.white} />
+          <Text style={styles.bookBtnText}>Book Appointment</Text>
         </Pressable>
       </View>
     </View>
@@ -149,10 +156,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 60, paddingBottom: 8,
   },
   backBtn: { width: 40 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
+  favBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray100,
+    alignItems: 'center', justifyContent: 'center',
+  },
 
   // Doctor
   doctorSection: { alignItems: 'center', paddingTop: 16, paddingBottom: 8 },
+  onlineBadge: {
+    position: 'absolute', bottom: 2, right: 2, width: 16, height: 16,
+    borderRadius: 8, backgroundColor: '#10b981', borderWidth: 3, borderColor: colors.white,
+  },
   docAvatar: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: '#e0f2fe',
     alignItems: 'center', justifyContent: 'center',
