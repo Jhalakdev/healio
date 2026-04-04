@@ -33,7 +33,7 @@ async function main() {
       doctor: {
         create: {
           name: 'Dr. Priya Sharma',
-          qualification: 'MBBS, MD (General Medicine)',
+          qualifications: ['MBBS', 'MD (General Medicine)'],
           specialization: 'General Medicine',
           experience: 8,
           consultationFee: 500,
@@ -116,7 +116,7 @@ async function main() {
       doctor: {
         create: {
           name: 'Dr. Amit Verma',
-          qualification: 'MBBS, MD (Dermatology)',
+          qualifications: ['MBBS', 'MD (Dermatology)'],
           specialization: 'Dermatology',
           experience: 5,
           consultationFee: 700,
