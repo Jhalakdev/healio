@@ -1,67 +1,54 @@
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Switch,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Switch, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { colors, fontSize, spacing, radius } from '../../lib/theme';
-import { clearTokens } from '../../lib/api';
+import { colors } from '../../lib/theme';
+import { api, clearTokens } from '../../lib/api';
 
-const upcomingBookings = [
-  {
-    id: '1', patient: 'Rahul Kumar', age: 28, gender: 'M',
-    symptoms: 'Persistent headache, mild fever', time: 'Now', isIncoming: true, reports: 2,
-  },
-  {
-    id: '2', patient: 'Anita Mishra', age: 35, gender: 'F',
-    symptoms: 'Skin rash on arms', time: '2:30 PM', isIncoming: false, reports: 1,
-  },
-  {
-    id: '3', patient: 'Suresh Patil', age: 45, gender: 'M',
-    symptoms: 'Back pain, difficulty sleeping', time: '3:00 PM', isIncoming: false, reports: 0,
-  },
-];
+const statusColor: Record<string, string> = {
+  PENDING: '#f59e0b', CONFIRMED: '#0d9488', IN_PROGRESS: '#10b981',
+  COMPLETED: '#10b981', CANCELLED: '#ef4444',
+};
 
 export default function DoctorDashboard() {
-  const [isOnline, setIsOnline] = useState(true);
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isOnline, setIsOnline] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      api('/doctors/me/dashboard').then((d) => { setDashboard(d); setIsOnline(d?.isOnline || false); }).catch(() => {}),
+      api('/doctors/me/bookings-by-date?range=today').then((d) => setBookings(d?.bookings || [])).catch(() => {}),
+    ]).finally(() => setLoading(false));
+  }, []);
+
+  const toggleOnline = async (val: boolean) => {
+    setIsOnline(val);
+    try { await api('/doctors/me/toggle-online', { method: 'POST', body: JSON.stringify({ isOnline: val }) }); } catch {}
+  };
+
+  if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good afternoon</Text>
-          <Text style={styles.name}>Dr. Priya Sharma</Text>
+          <Text style={styles.greeting}>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}</Text>
+          <Text style={styles.name}>Doctor Dashboard</Text>
         </View>
-        <View style={styles.headerRight}>
-          <View style={styles.onlineToggle}>
-            <View style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]} />
-            <Text style={[styles.statusText, isOnline ? styles.textOnline : styles.textOffline]}>
-              {isOnline ? 'Online' : 'Offline'}
-            </Text>
-            <Switch
-              value={isOnline}
-              onValueChange={setIsOnline}
-              trackColor={{ true: colors.success, false: colors.gray300 }}
-              thumbColor={colors.white}
-            />
-          </View>
+        <View style={styles.onlineToggle}>
+          <View style={[styles.statusDot, { backgroundColor: isOnline ? '#10b981' : colors.gray400 }]} />
+          <Text style={[styles.statusText, { color: isOnline ? '#10b981' : colors.gray400 }]}>{isOnline ? 'Online' : 'Offline'}</Text>
+          <Switch value={isOnline} onValueChange={toggleOnline} trackColor={{ true: '#10b981', false: colors.gray300 }} thumbColor={colors.white} />
         </View>
       </View>
 
-      {/* Stats */}
+      {/* Stats from API */}
       <View style={styles.statsRow}>
         {[
-          { label: "Today's", value: '4', icon: 'calendar-outline' as const, color: '#3b82f6' },
-          { label: 'Earnings', value: '₹2.8K', icon: 'wallet-outline' as const, color: '#10b981' },
-          { label: 'Monthly', value: '₹54.6K', icon: 'trending-up-outline' as const, color: '#8b5cf6' },
-          { label: 'Patients', value: '2,340', icon: 'people-outline' as const, color: '#f59e0b' },
+          { label: "Today's", value: String(dashboard?.todayBookings || 0), icon: 'calendar-outline' as const, color: '#3b82f6' },
+          { label: 'Earnings', value: `₹${Number(dashboard?.totalEarnings || 0).toLocaleString('en-IN')}`, icon: 'wallet-outline' as const, color: '#10b981' },
         ].map((stat) => (
           <View key={stat.label} style={styles.statCard}>
             <Ionicons name={stat.icon} size={20} color={stat.color} />
@@ -71,88 +58,39 @@ export default function DoctorDashboard() {
         ))}
       </View>
 
-      {/* Upcoming */}
+      {/* Today's bookings from API */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Upcoming Consultations</Text>
-
-        {upcomingBookings.map((booking) => (
-          <View
-            key={booking.id}
-            style={[styles.bookingCard, booking.isIncoming && styles.bookingIncoming]}
-          >
-            {booking.isIncoming && (
-              <LinearGradient
-                colors={['#0d9488', '#059669']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.incomingBar}
-              />
-            )}
-            <View style={styles.bookingHeader}>
-              <View style={styles.patientRow}>
-                <View style={styles.patientAvatar}>
-                  <Text style={styles.patientAvatarText}>
-                    {booking.patient.split(' ').map((n) => n[0]).join('')}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={styles.patientName}>{booking.patient}</Text>
-                  <Text style={styles.patientMeta}>
-                    {booking.age}yrs · {booking.gender}
-                  </Text>
-                </View>
+        <Text style={styles.sectionTitle}>Today's Consultations</Text>
+        {bookings.length > 0 ? bookings.map((b: any) => (
+          <View key={b.id} style={styles.bookingCard}>
+            <View style={styles.patientRow}>
+              <View style={styles.patientAvatar}><Text style={styles.patientAvatarText}>{(b.patientName || 'P')[0]}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.patientName}>{b.patientName}</Text>
+                <Text style={styles.patientMeta}>{new Date(b.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {b.durationMin}min</Text>
               </View>
-              <View style={styles.timeTag}>
-                {booking.isIncoming && (
-                  <View style={styles.liveDot} />
-                )}
-                <Text style={[styles.timeText, booking.isIncoming && styles.timeTextLive]}>
-                  {booking.time}
-                </Text>
+              <View style={[styles.statusBadge, { backgroundColor: (statusColor[b.status] || '#64748b') + '15' }]}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: statusColor[b.status] || '#64748b' }}>{b.status}</Text>
               </View>
             </View>
-
-            <View style={styles.symptomsBox}>
-              <Text style={styles.symptomsLabel}>Symptoms</Text>
-              <Text style={styles.symptomsText}>{booking.symptoms}</Text>
-            </View>
-
-            {booking.reports > 0 && (
-              <View style={styles.reportsTag}>
-                <Ionicons name="document-text-outline" size={14} color={colors.primary} />
-                <Text style={styles.reportsText}>
-                  {booking.reports} report{booking.reports > 1 ? 's' : ''} attached
-                </Text>
+            {b.symptoms && (
+              <View style={styles.symptomsBox}>
+                <Text style={styles.symptomsLabel}>Symptoms</Text>
+                <Text style={styles.symptomsText}>{b.symptoms}</Text>
               </View>
             )}
-
-            <View style={styles.bookingActions}>
-              {booking.isIncoming ? (
-                <>
-                  <Pressable style={styles.acceptBtn}>
-                    <Ionicons name="videocam" size={18} color={colors.white} />
-                    <Text style={styles.acceptBtnText}>Accept & Join</Text>
-                  </Pressable>
-                  <Pressable style={styles.declineBtn}>
-                    <Ionicons name="close" size={20} color={colors.danger} />
-                  </Pressable>
-                </>
-              ) : (
-                <Pressable style={styles.viewBtn}>
-                  <Text style={styles.viewBtnText}>View Details</Text>
-                </Pressable>
-              )}
-            </View>
           </View>
-        ))}
+        )) : (
+          <View style={styles.emptyBox}>
+            <Ionicons name="calendar-outline" size={40} color={colors.gray300} />
+            <Text style={styles.emptyText}>No consultations today</Text>
+          </View>
+        )}
       </View>
 
       {/* Logout */}
-      <Pressable
-        style={styles.logoutBtn}
-        onPress={async () => { await clearTokens(); router.replace('/'); }}
-      >
-        <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+      <Pressable style={styles.logoutBtn} onPress={() => { clearTokens(); router.replace('/'); }}>
+        <Ionicons name="log-out-outline" size={18} color="#ef4444" />
         <Text style={styles.logoutText}>Logout</Text>
       </Pressable>
 
@@ -163,89 +101,31 @@ export default function DoctorDashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: spacing.lg,
-  },
-  greeting: { fontSize: fontSize.sm, color: colors.textSecondary },
-  name: { fontSize: fontSize['2xl'], fontWeight: '800', color: colors.text, marginTop: 2 },
-  headerRight: { marginTop: 4 },
-  onlineToggle: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.white, paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm, borderRadius: radius.lg,
-  },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16 },
+  greeting: { fontSize: 12, color: colors.gray400 },
+  name: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 2 },
+  onlineToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.white, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  dotOnline: { backgroundColor: colors.success },
-  dotOffline: { backgroundColor: colors.gray400 },
-  statusText: { fontSize: fontSize.xs, fontWeight: '700' },
-  textOnline: { color: colors.success },
-  textOffline: { color: colors.gray400 },
-  statsRow: {
-    flexDirection: 'row', gap: spacing.md,
-    paddingHorizontal: spacing.xl, marginTop: spacing.md,
-  },
-  statCard: {
-    flex: 1, backgroundColor: colors.white, borderRadius: radius.lg,
-    padding: spacing.md, alignItems: 'center', gap: 4,
-    shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
-  },
-  statValue: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
-  statLabel: { fontSize: 10, color: colors.textSecondary, fontWeight: '600' },
-  section: { paddingHorizontal: spacing.xl, marginTop: spacing['2xl'] },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, marginBottom: spacing.lg },
-  bookingCard: {
-    backgroundColor: colors.white, borderRadius: radius.xl,
-    padding: spacing.lg, marginBottom: spacing.md, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
-  },
-  bookingIncoming: { borderWidth: 1, borderColor: '#99f6e4' },
-  incomingBar: { height: 3, marginHorizontal: -spacing.lg, marginTop: -spacing.lg, marginBottom: spacing.md },
-  bookingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  patientRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  patientAvatar: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  patientAvatarText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
-  patientName: { fontSize: fontSize.base, fontWeight: '700', color: colors.text },
-  patientMeta: { fontSize: fontSize.xs, color: colors.textSecondary },
-  timeTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
-  timeText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  timeTextLive: { color: colors.success },
-  symptomsBox: {
-    backgroundColor: colors.gray50, borderRadius: radius.md,
-    padding: spacing.md, marginTop: spacing.md,
-  },
-  symptomsLabel: { fontSize: 10, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 },
-  symptomsText: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
-  reportsTag: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    marginTop: spacing.sm,
-  },
-  reportsText: { fontSize: fontSize.xs, color: colors.primary, fontWeight: '600' },
-  bookingActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
-  acceptBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.sm, backgroundColor: colors.primary, paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-  },
-  acceptBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.white },
-  declineBtn: {
-    width: 44, height: 44, borderRadius: radius.md, backgroundColor: '#fef2f2',
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#fecaca',
-  },
-  viewBtn: {
-    flex: 1, alignItems: 'center', paddingVertical: spacing.md,
-    borderRadius: radius.lg, backgroundColor: colors.gray100,
-  },
-  viewBtnText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  logoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.sm, marginTop: spacing['2xl'], marginHorizontal: spacing.xl,
-    padding: spacing.lg, borderRadius: radius.lg,
-    backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
-  },
-  logoutText: { fontSize: fontSize.base, fontWeight: '600', color: colors.danger },
+  statusText: { fontSize: 12, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, marginTop: 8 },
+  statCard: { flex: 1, backgroundColor: colors.white, borderRadius: 14, padding: 16, alignItems: 'center', gap: 4 },
+  statValue: { fontSize: 18, fontWeight: '800', color: colors.text },
+  statLabel: { fontSize: 10, color: colors.gray400 },
+  section: { paddingHorizontal: 20, marginTop: 24 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  bookingCard: { backgroundColor: colors.white, borderRadius: 16, padding: 16, marginBottom: 10 },
+  patientRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  patientAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  patientAvatarText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  patientName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  patientMeta: { fontSize: 12, color: colors.gray400, marginTop: 2 },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  symptomsBox: { backgroundColor: colors.gray50, borderRadius: 10, padding: 12, marginTop: 10 },
+  symptomsLabel: { fontSize: 10, color: colors.gray400, fontWeight: '600', marginBottom: 2 },
+  symptomsText: { fontSize: 13, color: colors.text },
+  emptyBox: { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emptyText: { fontSize: 14, color: colors.gray400 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, marginHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca' },
+  logoutText: { fontSize: 15, fontWeight: '600', color: '#ef4444' },
 });
