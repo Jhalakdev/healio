@@ -173,24 +173,58 @@ export class AdminService {
   // ─── PLAN MANAGEMENT ───────────────────────────
   async createPlan(data: {
     name: string;
+    type?: string;
     price: number;
     consultations: number;
+    maxMembers?: number;
     validityDays: number;
+    childDiscountPercent?: number;
+    description?: string;
+    features?: string[];
+    sortOrder?: number;
   }) {
     return this.prisma.plan.create({
       data: {
         name: data.name,
+        type: data.type || 'single',
         price: new Decimal(data.price),
         consultations: data.consultations,
+        maxMembers: data.maxMembers || 1,
         validityDays: data.validityDays,
+        childDiscountPercent: data.childDiscountPercent ? new Decimal(data.childDiscountPercent) : new Decimal(10),
+        description: data.description,
+        features: data.features || [],
+        sortOrder: data.sortOrder || 0,
+      },
+    });
+  }
+
+  async updatePlan(planId: string, data: {
+    name?: string;
+    type?: string;
+    price?: number;
+    consultations?: number;
+    maxMembers?: number;
+    validityDays?: number;
+    childDiscountPercent?: number;
+    description?: string;
+    features?: string[];
+    sortOrder?: number;
+    isActive?: boolean;
+  }) {
+    return this.prisma.plan.update({
+      where: { id: planId },
+      data: {
+        ...data,
+        price: data.price ? new Decimal(data.price) : undefined,
+        childDiscountPercent: data.childDiscountPercent ? new Decimal(data.childDiscountPercent) : undefined,
       },
     });
   }
 
   async listPlans() {
     return this.prisma.plan.findMany({
-      where: { isActive: true },
-      orderBy: { price: 'asc' },
+      orderBy: { sortOrder: 'asc' },
     });
   }
 

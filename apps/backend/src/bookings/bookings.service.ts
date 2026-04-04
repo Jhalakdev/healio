@@ -174,9 +174,11 @@ export class BookingsService {
           couponCode,
           discount,
           paidViaPlan,
+          forMemberId: dto.forMemberId || null,
         },
         include: {
           doctor: { select: { name: true, specialization: true } },
+          forMember: dto.forMemberId ? { select: { name: true, relation: true } } : false,
         },
       });
     });

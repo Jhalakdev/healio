@@ -39,6 +39,11 @@ export class CreateBookingDto {
   @IsOptional()
   medications?: string;
 
+  @ApiPropertyOptional({ description: 'Family member ID if booking for someone else' })
+  @IsString()
+  @IsOptional()
+  forMemberId?: string;
+
   @ApiPropertyOptional({ description: 'Coupon code to apply discount' })
   @IsString()
   @IsOptional()

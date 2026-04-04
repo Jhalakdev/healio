@@ -90,23 +90,75 @@ export class UsersService {
     });
   }
 
-  // ─── FAMILY MEMBERS ───────────────────────────────
+  // ─── FAMILY MEMBERS (max 5: 3 adults + 2 children OR 2 adults + 3 children) ───
 
   async addFamilyMember(
     userId: string,
-    data: { name: string; relation: string; dob?: string; gender?: string; bloodGroup?: string },
+    data: {
+      name: string;
+      relation: string;
+      isChild?: boolean;
+      age?: number;
+      dob?: string;
+      gender?: string;
+      bloodGroup?: string;
+      photoUrl?: string;
+      phoneNumber?: string;
+    },
   ) {
     const patient = await this.prisma.patient.findUnique({ where: { userId } });
     if (!patient) throw new NotFoundException('Patient not found');
+
+    // Get current members
+    const existing = await this.prisma.familyMember.findMany({
+      where: { patientId: patient.id },
+    });
+
+    // Total limit: 5 members
+    if (existing.length >= 5) {
+      throw new BadRequestException(
+        'Maximum 5 family members allowed per account',
+      );
+    }
+
+    const adultCount = existing.filter((m) => !m.isChild).length;
+    const childCount = existing.filter((m) => m.isChild).length;
+    const isChild = data.isChild || false;
+
+    // Adult limit: max 3
+    if (!isChild && adultCount >= 3) {
+      throw new BadRequestException(
+        'Maximum 3 adult members allowed. You already have ' + adultCount,
+      );
+    }
+
+    // Child limit: max 3
+    if (isChild && childCount >= 3) {
+      throw new BadRequestException(
+        'Maximum 3 child members allowed. You already have ' + childCount,
+      );
+    }
+
+    // If age >= 18, phone verification is required
+    if (data.age && data.age >= 18 && !data.phoneNumber) {
+      throw new BadRequestException(
+        'Phone number is required for members aged 18 or older',
+      );
+    }
 
     return this.prisma.familyMember.create({
       data: {
         patientId: patient.id,
         name: data.name,
         relation: data.relation,
+        isChild,
+        age: data.age,
         dob: data.dob ? new Date(data.dob) : undefined,
         gender: data.gender,
         bloodGroup: data.bloodGroup,
+        photoUrl: data.photoUrl,
+        phoneNumber: data.phoneNumber,
+        isVerified: isChild && (!data.age || data.age < 18), // children auto-verified
       },
     });
   }

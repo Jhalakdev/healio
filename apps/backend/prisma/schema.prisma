@@ -106,16 +106,23 @@ model Patient {
 }
 
 model FamilyMember {
-  id        String   @id @default(cuid())
-  patientId String
-  name      String
-  relation  String   // "spouse", "child", "parent", "sibling", "other"
-  dob       DateTime?
-  gender    String?
-  bloodGroup String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  patientId   String
+  name        String
+  relation    String   // "spouse", "child", "parent", "sibling", "other"
+  isChild     Boolean  @default(false)
+  age         Int?
+  dob         DateTime?
+  gender      String?
+  bloodGroup  String?
+  photoUrl    String?
+  phoneNumber String?  // required if age >= 18
+  isVerified  Boolean  @default(false) // phone verified for 18+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  patient Patient @relation(fields: [patientId], references: [id])
+  patient  Patient   @relation(fields: [patientId], references: [id])
+  bookings Booking[] @relation("memberBookings")
 
   @@map("family_members")
 }
@@ -200,6 +207,7 @@ model Booking {
   id            String        @id @default(cuid())
   patientId     String
   doctorId      String
+  forMemberId   String?       // if booking is for a family member
   mode          BookingMode
   status        BookingStatus @default(PENDING)
   scheduledAt   DateTime
@@ -230,6 +238,7 @@ model Booking {
   messages      Message[]
   transactions  Transaction[]
   review        Review?
+  forMember     FamilyMember?  @relation("memberBookings", fields: [forMemberId], references: [id])
 
   @@index([doctorId, scheduledAt])
   @@index([patientId, status])
@@ -365,14 +374,20 @@ model Coupon {
 }
 
 model Plan {
-  id              String   @id @default(cuid())
-  name            String
-  price           Decimal  @db.Decimal(10, 2)
-  consultations   Int      // number of consultations included
-  validityDays    Int
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  type                String   @default("single") // "single" | "family" | "yearly"
+  price               Decimal  @db.Decimal(10, 2)
+  consultations       Int      // number of consultations included
+  maxMembers          Int      @default(1) // 1 for single, 3 or 5 for family
+  validityDays        Int
+  childDiscountPercent Decimal @default(10) @db.Decimal(5, 2) // % discount when child added
+  description         String?
+  features            String[] // ["Unlimited chat", "Priority booking", etc.]
+  isActive            Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   subscriptions PatientPlan[]
 

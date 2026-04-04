@@ -116,9 +116,15 @@ export class AdminController {
   }
 
   @Get('plans')
-  @ApiOperation({ summary: 'List plans' })
+  @ApiOperation({ summary: 'List all plans (including inactive)' })
   listPlans() {
     return this.adminService.listPlans();
+  }
+
+  @Patch('plans/:id')
+  @ApiOperation({ summary: 'Update plan (price, members, validity, discount, etc.)' })
+  updatePlan(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.updatePlan(id, body);
   }
 
   // Analytics

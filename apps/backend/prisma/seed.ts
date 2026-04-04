@@ -135,19 +135,60 @@ async function main() {
 
   // Create consultation plans
   const plans = [
-    { name: 'Single Consultation', price: 299, consultations: 1, validityDays: 30 },
-    { name: '3-Consultation Pack', price: 699, consultations: 3, validityDays: 90 },
-    { name: '5-Consultation Pack', price: 999, consultations: 5, validityDays: 180 },
+    {
+      name: 'Single Consult',
+      type: 'single',
+      price: 399,
+      consultations: 1,
+      maxMembers: 1,
+      validityDays: 30,
+      childDiscountPercent: 10,
+      description: 'One-time consultation with any available doctor',
+      features: ['15-min HD video call', 'Digital prescription', 'Chat support'],
+      sortOrder: 1,
+    },
+    {
+      name: 'Family Plan - 3 Members',
+      type: 'family',
+      price: 1000,
+      consultations: 3,
+      maxMembers: 3,
+      validityDays: 90,
+      childDiscountPercent: 10,
+      description: 'Perfect for small families. Add up to 3 members.',
+      features: ['3 consultations', '3 family members', '10% child discount', '3 months validity'],
+      sortOrder: 2,
+    },
+    {
+      name: 'Family Plan - 5 Members',
+      type: 'family',
+      price: 1500,
+      consultations: 5,
+      maxMembers: 5,
+      validityDays: 90,
+      childDiscountPercent: 10,
+      description: 'Best for larger families. Add up to 5 members.',
+      features: ['5 consultations', '5 family members', '10% child discount', '3 months validity', 'Priority booking'],
+      sortOrder: 3,
+    },
+    {
+      name: 'Yearly Card',
+      type: 'yearly',
+      price: 5999,
+      consultations: 10,
+      maxMembers: 5,
+      validityDays: 365,
+      childDiscountPercent: 10,
+      description: 'Annual health card with 10 consultations for the whole family.',
+      features: ['10 consultations', '5 family members', '12 months validity', 'Priority booking', 'Free follow-ups', '10% child discount'],
+      sortOrder: 4,
+    },
   ];
 
   for (const plan of plans) {
-    await prisma.plan.upsert({
-      where: { id: plan.name.toLowerCase().replace(/\s+/g, '-') },
-      update: { price: plan.price, consultations: plan.consultations },
-      create: plan,
-    });
+    await prisma.plan.create({ data: plan });
   }
-  console.log('✅ Plans created (₹299 single, ₹699 3-pack, ₹999 5-pack)');
+  console.log('✅ Plans created (₹399 single, ₹1000 family-3, ₹1500 family-5, ₹5999 yearly)');
 
   // Create demo coupons
   await prisma.coupon.upsert({
