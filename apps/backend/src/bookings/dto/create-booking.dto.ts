@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsString,
   IsDateString,
+  IsBoolean,
   ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -37,4 +38,14 @@ export class CreateBookingDto {
   @IsString()
   @IsOptional()
   medications?: string;
+
+  @ApiPropertyOptional({ description: 'Coupon code to apply discount' })
+  @IsString()
+  @IsOptional()
+  couponCode?: string;
+
+  @ApiPropertyOptional({ description: 'Use active plan instead of wallet payment' })
+  @IsBoolean()
+  @IsOptional()
+  usePlan?: boolean;
 }

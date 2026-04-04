@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { StorageService } from '../storage/storage.service';
 import { UpdateDoctorProfileDto } from './dto/update-doctor.dto';
 import { ListDoctorsDto } from './dto/list-doctors.dto';
 
@@ -11,6 +12,7 @@ export class DoctorsService {
     private prisma: PrismaService,
     private redis: RedisService,
     private config: ConfigService,
+    private storage: StorageService,
   ) {}
 
   async listDoctors(query: ListDoctorsDto) {
@@ -339,5 +341,45 @@ export class DoctorsService {
     }
 
     return leastBusyDoctor;
+  }
+
+  // ─── DOCTOR DOCUMENT UPLOAD ───────────────────────
+
+  async uploadDocument(
+    userId: string,
+    type: string,
+    file: { buffer: Buffer; originalname: string; mimetype: string },
+  ) {
+    const doctor = await this.getDoctorByUserId(userId);
+
+    const { key } = await this.storage.upload(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+      `doctor-documents/${doctor.id}`,
+    );
+
+    return this.prisma.doctorDocument.create({
+      data: {
+        doctorId: doctor.id,
+        type,
+        fileName: file.originalname,
+        fileUrl: key,
+      },
+    });
+  }
+
+  async getDocuments(doctorId: string) {
+    const docs = await this.prisma.doctorDocument.findMany({
+      where: { doctorId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return Promise.all(
+      docs.map(async (doc) => ({
+        ...doc,
+        fileUrl: await this.storage.getSignedUrl(doc.fileUrl),
+      })),
+    );
   }
 }

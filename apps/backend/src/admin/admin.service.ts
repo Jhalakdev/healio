@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { StorageService } from '../storage/storage.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { VerificationStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private storage: StorageService,
   ) {}
 
   // ─── DASHBOARD ──────────────────────────────────
@@ -213,5 +216,83 @@ export class AdminService {
       avgConsultationDuration: avgDuration._avg.durationMin || 0,
       topDoctors: revenueByDoctor,
     };
+  }
+
+  // ─── DOCTOR DOCUMENT REVIEW ─────────────────────
+  async getDoctorDocuments(doctorId: string) {
+    const docs = await this.prisma.doctorDocument.findMany({
+      where: { doctorId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return Promise.all(
+      docs.map(async (doc) => ({
+        ...doc,
+        fileUrl: await this.storage.getSignedUrl(doc.fileUrl),
+      })),
+    );
+  }
+
+  async verifyDocument(documentId: string, verified: boolean) {
+    return this.prisma.doctorDocument.update({
+      where: { id: documentId },
+      data: { verified },
+    });
+  }
+
+  // ─── ADMIN PERMISSION MANAGEMENT ────────────────
+  async createAdminUser(email: string, password: string, modules: { module: string; canRead: boolean; canWrite: boolean; canDelete: boolean }[]) {
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        role: 'ADMIN',
+        isActive: true,
+      },
+    });
+
+    // Create permissions for each module
+    for (const perm of modules) {
+      await this.prisma.adminPermission.create({
+        data: {
+          userId: user.id,
+          module: perm.module,
+          canRead: perm.canRead,
+          canWrite: perm.canWrite,
+          canDelete: perm.canDelete,
+        },
+      });
+    }
+
+    return { id: user.id, email: user.email, permissions: modules };
+  }
+
+  async getAdminPermissions(userId: string) {
+    return this.prisma.adminPermission.findMany({
+      where: { userId },
+    });
+  }
+
+  async updateAdminPermissions(userId: string, module: string, data: { canRead?: boolean; canWrite?: boolean; canDelete?: boolean }) {
+    return this.prisma.adminPermission.upsert({
+      where: { userId_module: { userId, module } },
+      create: { userId, module, ...data },
+      update: data,
+    });
+  }
+
+  async listAdminUsers() {
+    return this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
   }
 }

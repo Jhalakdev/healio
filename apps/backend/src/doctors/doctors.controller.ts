@@ -7,8 +7,11 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-fastify';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -89,5 +92,30 @@ export class DoctorsController {
     @Body() dto: ManageSlotsDto,
   ) {
     return this.doctorsService.manageSlots(user.userId, dto.slots);
+  }
+
+  @Post('me/documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload verification document (MBBS cert, registration ID, state council)' })
+  @UseInterceptors(FileInterceptor('file'))
+  uploadDocument(
+    @CurrentUser() user: CurrentUserData,
+    @UploadedFile() file: any,
+    @Query('type') type: string, // mbbs_certificate | registration_id | state_council
+  ) {
+    return this.doctorsService.uploadDocument(user.userId, type, file);
+  }
+
+  @Get('me/documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get uploaded documents' })
+  async getMyDocuments(@CurrentUser() user: CurrentUserData) {
+    const doctor = await this.doctorsService.getDoctorByUserId(user.userId);
+    return this.doctorsService.getDocuments(doctor.id);
   }
 }

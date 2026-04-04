@@ -127,4 +127,50 @@ export class AdminController {
   getAnalytics() {
     return this.adminService.getAnalytics();
   }
+
+  // Doctor Document Review
+  @Get('doctors/:id/documents')
+  @ApiOperation({ summary: 'View doctor verification documents' })
+  getDoctorDocuments(@Param('id') id: string) {
+    return this.adminService.getDoctorDocuments(id);
+  }
+
+  @Patch('documents/:id/verify')
+  @ApiOperation({ summary: 'Verify/reject a doctor document' })
+  verifyDocument(
+    @Param('id') id: string,
+    @Body('verified') verified: boolean,
+  ) {
+    return this.adminService.verifyDocument(id, verified);
+  }
+
+  // Admin User & Permission Management
+  @Post('users')
+  @Roles(Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Create admin user with permissions' })
+  createAdminUser(@Body() body: { email: string; password: string; modules: any[] }) {
+    return this.adminService.createAdminUser(body.email, body.password, body.modules);
+  }
+
+  @Get('users')
+  @ApiOperation({ summary: 'List all admin users' })
+  listAdminUsers() {
+    return this.adminService.listAdminUsers();
+  }
+
+  @Get('users/:userId/permissions')
+  @ApiOperation({ summary: 'Get admin user permissions' })
+  getPermissions(@Param('userId') userId: string) {
+    return this.adminService.getAdminPermissions(userId);
+  }
+
+  @Patch('users/:userId/permissions')
+  @Roles(Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update admin user permissions' })
+  updatePermissions(
+    @Param('userId') userId: string,
+    @Body() body: { module: string; canRead?: boolean; canWrite?: boolean; canDelete?: boolean },
+  ) {
+    return this.adminService.updateAdminPermissions(userId, body.module, body);
+  }
 }

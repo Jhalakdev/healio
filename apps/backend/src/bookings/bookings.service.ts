@@ -10,6 +10,7 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { DoctorsService } from '../doctors/doctors.service';
+import { PlansService } from '../plans/plans.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RescheduleBookingDto } from './dto/reschedule-booking.dto';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -22,6 +23,7 @@ export class BookingsService {
     private redis: RedisService,
     private config: ConfigService,
     private doctorsService: DoctorsService,
+    private plansService: PlansService,
     @InjectQueue('booking') private bookingQueue: Queue,
     @InjectQueue('refund') private refundQueue: Queue,
   ) {}
@@ -49,14 +51,6 @@ export class BookingsService {
     });
     if (!doctor) throw new NotFoundException('Doctor not found');
 
-    // Check wallet balance
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { userId: patientUserId },
-    });
-    if (!wallet || wallet.balance.lessThan(doctor.consultationFee)) {
-      throw new BadRequestException('Insufficient wallet balance');
-    }
-
     const scheduledAt =
       dto.mode === 'INSTANT' ? new Date() : new Date(dto.scheduledAt!);
     const defaultDuration = this.config.get<number>(
@@ -73,25 +67,96 @@ export class BookingsService {
       await this.doctorsService.checkConflict(doctorId, scheduledAt, defaultDuration);
     }
 
+    // ─── PAYMENT LOGIC: Plan / Coupon / Wallet ────────
+    let amountToCharge = doctor.consultationFee;
+    let discount = new Decimal(0);
+    let couponCode: string | null = null;
+    let paidViaPlan = false;
+
+    // Option 1: Use active plan (free consultation)
+    if (dto.usePlan) {
+      const planUsed = await this.plansService.useConsultation(patient.id);
+      if (!planUsed) {
+        throw new BadRequestException(
+          'No active plan with remaining consultations. Purchase a plan or pay via wallet.',
+        );
+      }
+      paidViaPlan = true;
+      amountToCharge = new Decimal(0);
+    }
+
+    // Option 2: Apply coupon code (only if not using plan)
+    if (!paidViaPlan && dto.couponCode) {
+      const coupon = await this.prisma.coupon.findUnique({
+        where: { code: dto.couponCode.toUpperCase() },
+      });
+
+      if (!coupon || !coupon.isActive) {
+        throw new BadRequestException('Invalid coupon code');
+      }
+      if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+        throw new BadRequestException('Coupon has expired');
+      }
+      if (coupon.maxUsage > 0 && coupon.usedCount >= coupon.maxUsage) {
+        throw new BadRequestException('Coupon usage limit reached');
+      }
+
+      // Calculate discount
+      if (coupon.discountType === 'flat') {
+        discount = coupon.discountValue;
+      } else {
+        // percentage
+        discount = amountToCharge.mul(coupon.discountValue).div(100);
+      }
+
+      // Don't let discount exceed fee
+      if (discount.greaterThan(amountToCharge)) {
+        discount = amountToCharge;
+      }
+
+      amountToCharge = amountToCharge.sub(discount);
+      couponCode = coupon.code;
+
+      // Increment coupon usage
+      await this.prisma.coupon.update({
+        where: { id: coupon.id },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+
+    // Check wallet balance (if paying via wallet)
+    if (!paidViaPlan && amountToCharge.greaterThan(0)) {
+      const wallet = await this.prisma.wallet.findUnique({
+        where: { userId: patientUserId },
+      });
+      if (!wallet || wallet.balance.lessThan(amountToCharge)) {
+        throw new BadRequestException(
+          'Insufficient wallet balance. Please add money or purchase a plan.',
+        );
+      }
+    }
+
     const livekitRoom = `room_${uuid()}`;
 
     // Create booking + debit wallet in a transaction
     const booking = await this.prisma.$transaction(async (tx) => {
-      // Debit wallet
-      await tx.wallet.update({
-        where: { userId: patientUserId },
-        data: { balance: { decrement: doctor.consultationFee } },
-      });
+      // Debit wallet (only if not plan and amount > 0)
+      if (!paidViaPlan && amountToCharge.greaterThan(0)) {
+        await tx.wallet.update({
+          where: { userId: patientUserId },
+          data: { balance: { decrement: amountToCharge } },
+        });
 
-      // Create immutable ledger entry
-      await tx.transaction.create({
-        data: {
-          userId: patientUserId,
-          amount: doctor.consultationFee,
-          type: 'DEBIT',
-          description: `Consultation with Dr. ${doctor.name}`,
-        },
-      });
+        // Create immutable ledger entry
+        await tx.transaction.create({
+          data: {
+            userId: patientUserId,
+            amount: amountToCharge,
+            type: 'DEBIT',
+            description: `Consultation with Dr. ${doctor.name}${couponCode ? ` (coupon: ${couponCode})` : ''}`,
+          },
+        });
+      }
 
       // Create booking
       return tx.booking.create({
@@ -103,9 +168,12 @@ export class BookingsService {
           scheduledAt,
           durationMin: defaultDuration,
           livekitRoom,
-          amountCharged: doctor.consultationFee,
+          amountCharged: paidViaPlan ? doctor.consultationFee : amountToCharge,
           symptoms: dto.symptoms,
           medications: dto.medications,
+          couponCode,
+          discount,
+          paidViaPlan,
         },
         include: {
           doctor: { select: { name: true, specialization: true } },

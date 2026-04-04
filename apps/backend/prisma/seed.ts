@@ -133,6 +133,47 @@ async function main() {
   });
   console.log(`✅ Doctor created: ${doctor2User.email}`);
 
+  // Create consultation plans
+  const plans = [
+    { name: 'Single Consultation', price: 299, consultations: 1, validityDays: 30 },
+    { name: '3-Consultation Pack', price: 699, consultations: 3, validityDays: 90 },
+    { name: '5-Consultation Pack', price: 999, consultations: 5, validityDays: 180 },
+  ];
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where: { id: plan.name.toLowerCase().replace(/\s+/g, '-') },
+      update: { price: plan.price, consultations: plan.consultations },
+      create: plan,
+    });
+  }
+  console.log('✅ Plans created (₹299 single, ₹699 3-pack, ₹999 5-pack)');
+
+  // Create demo coupons
+  await prisma.coupon.upsert({
+    where: { code: 'WELCOME50' },
+    update: {},
+    create: {
+      code: 'WELCOME50',
+      discountType: 'flat',
+      discountValue: 50,
+      maxUsage: 1000,
+      expiresAt: new Date('2027-12-31'),
+    },
+  });
+  await prisma.coupon.upsert({
+    where: { code: 'HEALTH20' },
+    update: {},
+    create: {
+      code: 'HEALTH20',
+      discountType: 'percentage',
+      discountValue: 20,
+      maxUsage: 500,
+      expiresAt: new Date('2027-12-31'),
+    },
+  });
+  console.log('✅ Coupons created (WELCOME50, HEALTH20)');
+
   // Set default app configs
   const configs = [
     { key: 'global_consultation_fee', value: 500 },

@@ -13,6 +13,9 @@ import { AdminModule } from './admin/admin.module';
 import { StorageModule } from './storage/storage.module';
 import { RedisModule } from './redis/redis.module';
 import { QueueModule } from './queue/queue.module';
+import { PlansModule } from './plans/plans.module';
+import { PrescriptionsModule } from './prescriptions/prescriptions.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { QueueModule } from './queue/queue.module';
     DoctorsModule,
     BookingsModule,
     WalletModule,
+    PlansModule,
+    PrescriptionsModule,
+    PaymentsModule,
     ReportsModule,
     VideoModule,
     ChatModule,

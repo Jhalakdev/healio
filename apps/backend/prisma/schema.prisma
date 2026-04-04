@@ -13,6 +13,7 @@ enum Role {
   PATIENT
   DOCTOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum VerificationStatus {
@@ -89,9 +90,10 @@ model Patient {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id])
-  bookings Booking[] @relation("patientBookings")
-  reports  Report[]
+  user          User               @relation(fields: [userId], references: [id])
+  bookings      Booking[]          @relation("patientBookings")
+  reports       Report[]
+  subscriptions PatientPlan[]
 
   @@map("patients")
 }
@@ -111,15 +113,31 @@ model Doctor {
   lastSeenAt         DateTime?
   maxSessionsPerDay  Int                @default(20)
   timezone           String             @default("Asia/Kolkata")
-  documentsUrl       String[]           // MBBS cert, registration ID, etc.
+  stateMedicalCouncilNo String?
+  documentsUrl       String[]           // legacy field
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  user      User       @relation(fields: [userId], references: [id])
-  bookings  Booking[]  @relation("doctorBookings")
+  user      User              @relation(fields: [userId], references: [id])
+  bookings  Booking[]         @relation("doctorBookings")
   slots     DoctorSlot[]
+  documents DoctorDocument[]
 
   @@map("doctors")
+}
+
+model DoctorDocument {
+  id        String   @id @default(cuid())
+  doctorId  String
+  type      String   // "mbbs_certificate" | "registration_id" | "state_council" | "other"
+  fileName  String
+  fileUrl   String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@map("doctor_documents")
 }
 
 // ─── DOCTOR SCHEDULING ──────────────────────────────
@@ -161,6 +179,11 @@ model Booking {
   // Pre-consult intake
   symptoms    String?
   medications String?
+
+  // Payment
+  couponCode  String?
+  discount    Decimal       @default(0) @db.Decimal(10, 2)
+  paidViaPlan Boolean       @default(false)
 
   patient       Patient        @relation("patientBookings", fields: [patientId], references: [id])
   doctor        Doctor         @relation("doctorBookings", fields: [doctorId], references: [id])
@@ -292,7 +315,62 @@ model Plan {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  subscriptions PatientPlan[]
+
   @@map("plans")
+}
+
+// Patient's purchased plan (tracks remaining consultations)
+model PatientPlan {
+  id                    String   @id @default(cuid())
+  patientId             String
+  planId                String
+  consultationsRemaining Int
+  consultationsUsed     Int      @default(0)
+  expiresAt             DateTime
+  isActive              Boolean  @default(true)
+  razorpayOrderId       String?
+  createdAt             DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  plan    Plan    @relation(fields: [planId], references: [id])
+
+  @@index([patientId, isActive])
+  @@map("patient_plans")
+}
+
+// ─── PAYMENTS (RAZORPAY) ────────────────────────────
+
+model RazorpayOrder {
+  id              String   @id @default(cuid())
+  userId          String
+  razorpayOrderId String   @unique
+  razorpayPaymentId String?
+  amount          Decimal  @db.Decimal(10, 2)
+  currency        String   @default("INR")
+  status          String   @default("created") // created | paid | failed
+  purpose         String   // "wallet_topup" | "plan_purchase"
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@map("razorpay_orders")
+}
+
+// ─── ADMIN PERMISSIONS ──────────────────────────────
+
+model AdminPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  module    String   // "doctors" | "bookings" | "finance" | "analytics" | "coupons" | "plans" | "settings" | "users"
+  canRead   Boolean  @default(true)
+  canWrite  Boolean  @default(false)
+  canDelete Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, module])
+  @@map("admin_permissions")
 }
 
 // ─── AUDIT ──────────────────────────────────────────
