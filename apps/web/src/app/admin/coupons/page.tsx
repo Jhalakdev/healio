@@ -1,197 +1,123 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Plus,
-  Tag,
-  Percent,
-  IndianRupee,
-  ArrowUpRight,
-  Calendar,
-  Copy,
-  ToggleLeft,
-  ToggleRight,
-  Users,
-  ShoppingBag,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { Plus, Tag, Percent, IndianRupee, Trash2, Save } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const coupons = [
-  {
-    id: "1", code: "WELCOME50", discountType: "flat", discountValue: 50,
-    maxDiscountAmt: null, minOrderAmt: null, maxUsage: 1000, usedCount: 342,
-    perUserLimit: 1, applicableFor: "consultation", applicablePlans: [],
-    description: "₹50 off on your first consultation", isActive: true,
-    expiresAt: "2027-12-31",
-  },
-  {
-    id: "2", code: "HEALTH20", discountType: "percentage", discountValue: 20,
-    maxDiscountAmt: 200, minOrderAmt: 300, maxUsage: 500, usedCount: 128,
-    perUserLimit: 2, applicableFor: "all", applicablePlans: [],
-    description: "20% off up to ₹200", isActive: true,
-    expiresAt: "2027-12-31",
-  },
-  {
-    id: "3", code: "FAMILY100", discountType: "flat", discountValue: 100,
-    maxDiscountAmt: null, minOrderAmt: 699, maxUsage: 200, usedCount: 45,
-    perUserLimit: 1, applicableFor: "plan_purchase", applicablePlans: ["2", "3"],
-    description: "₹100 off on family plans only", isActive: true,
-    expiresAt: "2027-12-31",
-  },
-  {
-    id: "4", code: "YEARLY500", discountType: "upto", discountValue: 15,
-    maxDiscountAmt: 500, minOrderAmt: 2000, maxUsage: 100, usedCount: 12,
-    perUserLimit: 1, applicableFor: "plan_purchase", applicablePlans: ["4"],
-    description: "15% off up to ₹500 on yearly plan", isActive: false,
-    expiresAt: "2026-06-30",
-  },
-];
-
-const typeLabel: Record<string, string> = {
-  flat: "Flat Discount",
-  percentage: "Percentage",
-  upto: "% Up To ₹",
-};
-
-const typeIcon: Record<string, any> = {
-  flat: IndianRupee,
-  percentage: Percent,
-  upto: ArrowUpRight,
-};
-
-const forLabel: Record<string, string> = {
-  all: "All",
-  consultation: "Consultations",
-  plan_purchase: "Plan Purchase",
-};
+import { Input } from "@/components/ui/input";
+import { adminApi } from "@/lib/admin-api";
 
 export default function AdminCouponsPage() {
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [code, setCode] = useState("");
+  const [discountType, setDiscountType] = useState("flat");
+  const [discountValue, setDiscountValue] = useState("");
+  const [maxDiscount, setMaxDiscount] = useState("");
+  const [maxUsage, setMaxUsage] = useState("100");
+  const [description, setDescription] = useState("");
+
+  useEffect(() => { loadCoupons(); }, []);
+
+  const loadCoupons = async () => {
+    try { setCoupons(await adminApi("/admin/coupons")); } catch {}
+  };
+
+  const addCoupon = async () => {
+    if (!code || !discountValue) return alert("Fill code and discount value");
+    await adminApi("/admin/coupons", {
+      method: "POST",
+      body: JSON.stringify({
+        code: code.toUpperCase(),
+        discountType,
+        discountValue: Number(discountValue),
+        maxDiscountAmt: maxDiscount ? Number(maxDiscount) : undefined,
+        maxUsage: Number(maxUsage),
+        description,
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      }),
+    });
+    setCode(""); setDiscountValue(""); setMaxDiscount(""); setDescription("");
+    setShowAdd(false);
+    loadCoupons();
+  };
+
+  const deleteCoupon = async (id: string) => {
+    if (!confirm("Deactivate this coupon?")) return;
+    await adminApi(`/admin/coupons/${id}`, { method: "DELETE" });
+    loadCoupons();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Coupon Management</h1>
-          <p className="text-slate-400 mt-1">
-            Create discount codes, link to plans, set limits
-          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Coupons</h1>
+          <p className="text-slate-400 mt-1">{coupons.length} total coupons</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4" />
-          Create Coupon
+        <Button onClick={() => setShowAdd(!showAdd)}>
+          <Plus className="w-4 h-4" /> Create Coupon
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: "Active Coupons", value: "3", color: "text-emerald-600" },
-          { label: "Total Used", value: "527", color: "text-blue-600" },
-          { label: "Revenue Saved", value: "₹28,450", color: "text-violet-600" },
-          { label: "Expired", value: "1", color: "text-orange-600" },
-        ].map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4 text-center">
-              <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-slate-400 mt-1">{s.label}</p>
+      {/* Add form */}
+      {showAdd && (
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Coupon Code (e.g. SAVE50)" value={code} onChange={(e) => setCode(e.target.value)} />
+              <select
+                className="px-3 py-2 rounded-xl border border-slate-200 text-sm"
+                value={discountType}
+                onChange={(e) => setDiscountType(e.target.value)}
+              >
+                <option value="flat">Flat (₹ off)</option>
+                <option value="percentage">Percentage (% off)</option>
+                <option value="upto">% off up to ₹X</option>
+              </select>
+              <Input placeholder="Discount Value" type="number" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} />
+              {discountType === "upto" && (
+                <Input placeholder="Max Discount (₹)" type="number" value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)} />
+              )}
+              <Input placeholder="Max Usage" type="number" value={maxUsage} onChange={(e) => setMaxUsage(e.target.value)} />
+              <Input placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <Button onClick={addCoupon}><Save className="w-4 h-4" /> Save Coupon</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* List */}
+      <div className="space-y-3">
+        {coupons.map((c) => (
+          <Card key={c.id} className={!c.isActive ? "opacity-50" : ""}>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-20 h-16 rounded-xl bg-teal-50 flex flex-col items-center justify-center border-2 border-dashed border-teal-200">
+                <Tag className="w-4 h-4 text-teal-500 mb-0.5" />
+                <span className="text-xs font-black text-teal-700">{c.code}</span>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">
+                    {c.discountType === "flat" && `₹${c.discountValue} off`}
+                    {c.discountType === "percentage" && `${c.discountValue}% off`}
+                    {c.discountType === "upto" && `${c.discountValue}% off up to ₹${c.maxDiscountAmt}`}
+                  </span>
+                  <Badge variant={c.isActive ? "success" : "destructive"}>
+                    {c.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  {c.description || "No description"} · Used: {c.usedCount}/{c.maxUsage || "∞"}
+                </p>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => deleteCoupon(c.id)}>
+                <Trash2 className="w-4 h-4 text-red-400" />
+              </Button>
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Coupon list */}
-      <div className="space-y-4">
-        {coupons.map((coupon, i) => {
-          const Icon = typeIcon[coupon.discountType];
-          return (
-            <motion.div
-              key={coupon.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <Card className={`hover:shadow-md transition-shadow ${!coupon.isActive ? "opacity-60" : ""}`}>
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-5">
-                    {/* Code badge */}
-                    <div className="w-28 h-20 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 flex flex-col items-center justify-center border-2 border-dashed border-teal-200">
-                      <Tag className="w-4 h-4 text-teal-500 mb-1" />
-                      <span className="text-sm font-black text-teal-700 tracking-wider">{coupon.code}</span>
-                    </div>
-
-                    {/* Details */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-base">{coupon.description}</span>
-                        {coupon.isActive ? (
-                          <Badge variant="success">Active</Badge>
-                        ) : (
-                          <Badge variant="destructive">Inactive</Badge>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {/* Type */}
-                        <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-md text-xs">
-                          <Icon className="w-3 h-3" />
-                          <span className="font-medium">
-                            {coupon.discountType === "flat" && `₹${coupon.discountValue} off`}
-                            {coupon.discountType === "percentage" && `${coupon.discountValue}% off`}
-                            {coupon.discountType === "upto" && `${coupon.discountValue}% off up to ₹${coupon.maxDiscountAmt}`}
-                          </span>
-                        </div>
-
-                        {/* Applicable for */}
-                        <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md text-xs text-blue-700">
-                          <ShoppingBag className="w-3 h-3" />
-                          {forLabel[coupon.applicableFor]}
-                        </div>
-
-                        {/* Min order */}
-                        {coupon.minOrderAmt && (
-                          <div className="bg-amber-50 px-2 py-1 rounded-md text-xs text-amber-700">
-                            Min ₹{coupon.minOrderAmt}
-                          </div>
-                        )}
-
-                        {/* Per user */}
-                        <div className="bg-violet-50 px-2 py-1 rounded-md text-xs text-violet-700">
-                          {coupon.perUserLimit}x per user
-                        </div>
-
-                        {/* Linked plans */}
-                        {coupon.applicablePlans.length > 0 && (
-                          <div className="bg-teal-50 px-2 py-1 rounded-md text-xs text-teal-700">
-                            Linked to {coupon.applicablePlans.length} plan(s)
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Usage */}
-                    <div className="text-right">
-                      <p className="text-sm font-bold">
-                        {coupon.usedCount}/{coupon.maxUsage || "∞"}
-                      </p>
-                      <p className="text-xs text-slate-400">used</p>
-                      <div className="w-20 h-1.5 bg-slate-100 rounded-full mt-2">
-                        <div
-                          className="h-1.5 bg-teal-500 rounded-full"
-                          style={{ width: `${coupon.maxUsage ? (coupon.usedCount / coupon.maxUsage) * 100 : 10}%` }}
-                        />
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        Expires: {coupon.expiresAt}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
       </div>
     </div>
   );

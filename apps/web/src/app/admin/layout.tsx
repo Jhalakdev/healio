@@ -25,13 +25,14 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/doctors", label: "Doctors", icon: Stethoscope },
+  { href: "/admin/users", label: "Patients", icon: Users },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/admin/finance", label: "Finance", icon: CreditCard },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/plans", label: "Plans", icon: CreditCard },
   { href: "/admin/coupons", label: "Coupons", icon: Tag },
   { href: "/admin/categories", label: "Categories", icon: Stethoscope },
+  { href: "/admin/content", label: "Content", icon: Settings },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
