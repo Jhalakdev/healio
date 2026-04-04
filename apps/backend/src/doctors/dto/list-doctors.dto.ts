@@ -8,12 +8,17 @@ export class ListDoctorsDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filter by specialization text' })
   @IsString()
   @IsOptional()
   specialization?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filter by category ID' })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Show only online doctors (default: true for category view)' })
   @IsBoolean()
   @IsOptional()
   @Transform(({ value }) => value === 'true')

@@ -118,4 +118,53 @@ export class DoctorsController {
     const doctor = await this.doctorsService.getDoctorByUserId(user.userId);
     return this.doctorsService.getDocuments(doctor.id);
   }
+
+  // ─── BANK / UPI DETAILS ─────────────────────────
+
+  @Patch('me/payment-details')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update bank/UPI payment details' })
+  updatePaymentDetails(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: { upiId?: string; bankAccountNo?: string; bankIfsc?: string; bankName?: string; accountHolderName?: string },
+  ) {
+    return this.doctorsService.updatePaymentDetails(user.userId, body);
+  }
+
+  @Get('me/payment-details')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get saved payment details' })
+  getPaymentDetails(@CurrentUser() user: CurrentUserData) {
+    return this.doctorsService.getPaymentDetails(user.userId);
+  }
+
+  // ─── BOOKINGS BY DATE + EARNINGS ────────────────
+
+  @Get('me/bookings-by-date')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get bookings by date with earnings after commission' })
+  getBookingsByDate(
+    @CurrentUser() user: CurrentUserData,
+    @Query('date') date?: string,
+    @Query('range') range?: 'today' | 'yesterday' | 'tomorrow' | 'week',
+  ) {
+    return this.doctorsService.getBookingsByDate(user.userId, date, range);
+  }
+
+  // ─── PAYOUT HISTORY ─────────────────────────────
+
+  @Get('me/payouts')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get payout history' })
+  getPayouts(@CurrentUser() user: CurrentUserData) {
+    return this.doctorsService.getPayoutHistory(user.userId);
+  }
 }

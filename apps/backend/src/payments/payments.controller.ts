@@ -58,4 +58,29 @@ export class PaymentsController {
   getHistory(@CurrentUser() user: CurrentUserData) {
     return this.paymentsService.getPaymentHistory(user.userId);
   }
+
+  // Admin endpoints
+  @Post('payouts/process')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Process weekly payouts to all doctors (admin/cron)' })
+  processPayouts() {
+    return this.paymentsService.processWeeklyPayouts();
+  }
+
+  @Get('payouts/settings')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get payout schedule settings' })
+  getPayoutSettings() {
+    return this.paymentsService.getPayoutSettings();
+  }
+
+  @Patch('payouts/settings')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update payout schedule (day, autoEnabled)' })
+  updatePayoutSettings(@Body() body: { day: string; autoEnabled: boolean }) {
+    return this.paymentsService.updatePayoutSettings(body);
+  }
 }

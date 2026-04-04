@@ -167,6 +167,12 @@ model Doctor {
   consultationFee    Decimal            @default(0) @db.Decimal(10, 2)
   bio                String?
   avatarUrl          String?
+  // Payment details
+  upiId              String?            // e.g. "doctor@upi"
+  bankAccountNo      String?
+  bankIfsc           String?
+  bankName           String?
+  accountHolderName  String?
   verificationStatus VerificationStatus @default(PENDING)
   isOnline           Boolean            @default(false)
   lastSeenAt         DateTime?
@@ -180,6 +186,7 @@ model Doctor {
   avgResponseMin     Int?               // avg response time in minutes
   category  Category?         @relation(fields: [categoryId], references: [id])
   user      User              @relation(fields: [userId], references: [id])
+  payouts   DoctorPayout[]
   bookings  Booking[]         @relation("doctorBookings")
   slots     DoctorSlot[]
   documents DoctorDocument[]
@@ -508,6 +515,27 @@ model AdminPermission {
 
   @@unique([userId, module])
   @@map("admin_permissions")
+}
+
+// ─── DOCTOR PAYOUTS ─────────────────────────────────
+
+model DoctorPayout {
+  id                String   @id @default(cuid())
+  doctorId          String
+  amount            Decimal  @db.Decimal(10, 2)
+  periodStart       DateTime // e.g. Monday
+  periodEnd         DateTime // e.g. Sunday
+  status            String   @default("pending") // "pending" | "processing" | "completed" | "failed"
+  razorpayPayoutId  String?
+  upiId             String?
+  bookingCount      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, status])
+  @@map("doctor_payouts")
 }
 
 // ─── NOTIFICATIONS ──────────────────────────────────

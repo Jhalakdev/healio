@@ -22,6 +22,7 @@ export class DoctorsService {
       where: {
         verificationStatus: 'APPROVED',
         ...(query.specialization && { specialization: query.specialization }),
+        ...(query.categoryId && { categoryId: query.categoryId }),
         ...(query.onlineOnly && { id: { in: onlineDoctorIds } }),
         ...(query.search && {
           name: { contains: query.search, mode: 'insensitive' as const },
@@ -387,5 +388,130 @@ export class DoctorsService {
         fileUrl: await this.storage.getSignedUrl(doc.fileUrl),
       })),
     );
+  }
+
+  // ─── BANK / UPI DETAILS ───────────────────────────
+
+  async updatePaymentDetails(userId: string, data: {
+    upiId?: string;
+    bankAccountNo?: string;
+    bankIfsc?: string;
+    bankName?: string;
+    accountHolderName?: string;
+  }) {
+    return this.prisma.doctor.update({
+      where: { userId },
+      data,
+    });
+  }
+
+  async getPaymentDetails(userId: string) {
+    const doctor = await this.getDoctorByUserId(userId);
+    return {
+      upiId: doctor.upiId,
+      bankAccountNo: doctor.bankAccountNo,
+      bankIfsc: doctor.bankIfsc,
+      bankName: doctor.bankName,
+      accountHolderName: doctor.accountHolderName,
+    };
+  }
+
+  // ─── DOCTOR BOOKINGS BY DATE + EARNINGS ───────────
+
+  async getBookingsByDate(userId: string, date?: string, range?: 'today' | 'yesterday' | 'tomorrow' | 'week') {
+    const doctor = await this.getDoctorByUserId(userId);
+    const commissionPercent = 30; // platform takes 30%
+
+    let startDate: Date;
+    let endDate: Date;
+
+    if (date) {
+      startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      const now = new Date();
+      switch (range) {
+        case 'yesterday':
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - 1);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'tomorrow':
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() + 1);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'week':
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - startDate.getDay()); // start of week
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 6);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        default: // today
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 999);
+      }
+    }
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        doctorId: doctor.id,
+        scheduledAt: { gte: startDate, lte: endDate },
+      },
+      include: {
+        patient: { select: { name: true } },
+        forMember: { select: { name: true, relation: true } },
+      },
+      orderBy: { scheduledAt: 'asc' },
+    });
+
+    // Calculate earnings after commission
+    const enrichedBookings = bookings.map((b) => {
+      const gross = Number(b.amountCharged);
+      const commission = gross * (commissionPercent / 100);
+      const net = gross - commission;
+      return {
+        ...b,
+        grossAmount: gross,
+        commissionDeducted: commission,
+        netEarning: net,
+        patientName: b.forMember?.name || b.patient.name || 'Patient',
+      };
+    });
+
+    const totalGross = enrichedBookings.reduce((s, b) => s + b.grossAmount, 0);
+    const totalNet = enrichedBookings.reduce((s, b) => s + b.netEarning, 0);
+
+    return {
+      bookings: enrichedBookings,
+      summary: {
+        totalBookings: bookings.length,
+        completed: bookings.filter((b) => b.status === 'COMPLETED').length,
+        totalGrossEarnings: totalGross,
+        commissionDeducted: totalGross - totalNet,
+        totalNetEarnings: totalNet,
+        commissionPercent,
+      },
+    };
+  }
+
+  // ─── PAYOUT HISTORY ───────────────────────────────
+
+  async getPayoutHistory(userId: string) {
+    const doctor = await this.getDoctorByUserId(userId);
+    return this.prisma.doctorPayout.findMany({
+      where: { doctorId: doctor.id },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

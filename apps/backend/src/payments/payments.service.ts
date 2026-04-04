@@ -209,6 +209,15 @@ export class PaymentsService {
       body: JSON.stringify({
         amount: amount * 100, // Razorpay uses paise
         currency: 'INR',
+        // Restrict to UPI + Wallet only (no cards, no netbanking)
+        method: {
+          upi: true,
+          wallet: true,
+          card: false,
+          netbanking: false,
+          emi: false,
+          paylater: false,
+        },
       }),
     });
 
@@ -224,6 +233,147 @@ export class PaymentsService {
     return this.prisma.razorpayOrder.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ─── DOCTOR AUTO-PAYOUT (Weekly) ────────────────
+
+  /**
+   * Process weekly payouts to all doctors.
+   * Called by a cron job every Friday.
+   * Uses Razorpay Payouts API to transfer to doctor's UPI.
+   */
+  async processWeeklyPayouts() {
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setHours(23, 59, 59, 999);
+
+    // Period start = last Friday (or 7 days ago)
+    const periodStart = new Date(now);
+    periodStart.setDate(periodStart.getDate() - 7);
+    periodStart.setHours(0, 0, 0, 0);
+
+    // Get all doctors with pending earnings this week
+    const doctors = await this.prisma.doctor.findMany({
+      where: {
+        upiId: { not: null },
+        verificationStatus: 'APPROVED',
+      },
+    });
+
+    const results = [];
+
+    for (const doctor of doctors) {
+      // Sum doctor's earnings (CREDIT transactions) for this period
+      const earnings = await this.prisma.transaction.aggregate({
+        where: {
+          userId: doctor.userId,
+          type: 'CREDIT',
+          createdAt: { gte: periodStart, lte: periodEnd },
+        },
+        _sum: { amount: true },
+        _count: true,
+      });
+
+      const amount = Number(earnings._sum.amount || 0);
+      if (amount <= 0) continue;
+
+      // Create payout record
+      const payout = await this.prisma.doctorPayout.create({
+        data: {
+          doctorId: doctor.id,
+          amount: new Decimal(amount),
+          periodStart,
+          periodEnd,
+          status: 'processing',
+          upiId: doctor.upiId!,
+          bookingCount: earnings._count,
+        },
+      });
+
+      // Call Razorpay Payouts API (if configured)
+      if (this.razorpayKeyId && this.razorpayKeySecret) {
+        try {
+          const payoutResult = await this.createRazorpayPayout(
+            doctor.upiId!,
+            amount,
+            `Healio earnings week of ${periodStart.toISOString().split('T')[0]}`,
+          );
+          await this.prisma.doctorPayout.update({
+            where: { id: payout.id },
+            data: {
+              status: 'completed',
+              razorpayPayoutId: payoutResult.id,
+            },
+          });
+        } catch {
+          await this.prisma.doctorPayout.update({
+            where: { id: payout.id },
+            data: { status: 'failed' },
+          });
+        }
+      } else {
+        // Dev mode: mark as completed
+        await this.prisma.doctorPayout.update({
+          where: { id: payout.id },
+          data: { status: 'completed', razorpayPayoutId: `payout_dev_${Date.now()}` },
+        });
+      }
+
+      results.push({ doctorId: doctor.id, name: doctor.name, amount, status: 'processed' });
+    }
+
+    return { processed: results.length, payouts: results };
+  }
+
+  private async createRazorpayPayout(
+    upiId: string,
+    amount: number,
+    narration: string,
+  ): Promise<{ id: string }> {
+    const auth = Buffer.from(
+      `${this.razorpayKeyId}:${this.razorpayKeySecret}`,
+    ).toString('base64');
+
+    // Razorpay Payouts API (requires RazorpayX account)
+    const res = await fetch('https://api.razorpay.com/v1/payouts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${auth}`,
+      },
+      body: JSON.stringify({
+        account_number: this.config.get<string>('RAZORPAY_ACCOUNT_NUMBER', ''),
+        fund_account: {
+          account_type: 'vpa',
+          vpa: { address: upiId },
+        },
+        amount: amount * 100,
+        currency: 'INR',
+        mode: 'UPI',
+        purpose: 'payout',
+        narration,
+      }),
+    });
+
+    if (!res.ok) throw new Error('Payout failed');
+    return res.json();
+  }
+
+  // Admin: get payout settings
+  async getPayoutSettings() {
+    const config = await this.prisma.appConfig.findUnique({
+      where: { key: 'payout_schedule' },
+    });
+    return config?.value || { day: 'friday', autoEnabled: true };
+  }
+
+  // Admin: update payout settings
+  async updatePayoutSettings(settings: { day: string; autoEnabled: boolean }) {
+    return this.prisma.appConfig.upsert({
+      where: { key: 'payout_schedule' },
+      create: { key: 'payout_schedule', value: settings },
+      update: { value: settings },
     });
   }
 }
