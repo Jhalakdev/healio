@@ -1,38 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Plus, Eye, EyeOff, Save,
-  Droplets, Syringe, Bone, EyeIcon, Baby, Ribbon,
-  Hand, FlaskConical, Brain, Hospital, Flower2, ScanLine,
-  Heart, Accessibility, Stethoscope, Ear, Activity, Scan,
-} from "lucide-react";
+import { Plus, Eye, EyeOff, Save, Stethoscope } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { adminApi } from "@/lib/admin-api";
-
-// Map category names to Lucide icons + colors (same as app)
-const categoryIconMap: Record<string, { icon: any; color: string }> = {
-  "Nephrology": { icon: Droplets, color: "#3b82f6" },
-  "Anesthesiology": { icon: Syringe, color: "#8b5cf6" },
-  "Orthopedics": { icon: Bone, color: "#f59e0b" },
-  "Ophthalmology": { icon: EyeIcon, color: "#06b6d4" },
-  "Pediatrics": { icon: Baby, color: "#ec4899" },
-  "Oncology": { icon: Ribbon, color: "#ef4444" },
-  "Dermatology": { icon: Hand, color: "#f97316" },
-  "Pathology": { icon: FlaskConical, color: "#10b981" },
-  "Psychiatry": { icon: Brain, color: "#7c3aed" },
-  "General Surgery": { icon: Hospital, color: "#dc2626" },
-  "Endocrinology": { icon: Activity, color: "#14b8a6" },
-  "Radiology": { icon: ScanLine, color: "#6366f1" },
-  "Cardiology": { icon: Heart, color: "#e11d48" },
-  "General Medicine": { icon: Stethoscope, color: "#0d9488" },
-  "ENT": { icon: Ear, color: "#f59e0b" },
-  "Gynecology": { icon: Flower2, color: "#ec4899" },
-  "Neurology": { icon: Brain, color: "#7c3aed" },
-  "Geriatrics": { icon: Accessibility, color: "#0d9488" },
+import { getIcon } from "@/lib/icon-map";
 };
 
 export default function AdminCategoriesPage() {
@@ -116,18 +91,10 @@ export default function AdminCategoriesPage() {
           <Card key={cat.id} className={!cat.isActive ? "opacity-50" : ""}>
             <CardContent className="p-4 flex items-center gap-3">
               {(() => {
-                const mapped = categoryIconMap[cat.name];
-                if (mapped) {
-                  const Icon = mapped.icon;
-                  return (
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: mapped.color + "15" }}>
-                      <Icon className="w-6 h-6" style={{ color: mapped.color }} />
-                    </div>
-                  );
-                }
+                const { icon: Icon, color } = getIcon(cat.icon);
                 return (
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
-                    <Stethoscope className="w-6 h-6 text-teal-400" />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + "15" }}>
+                    <Icon className="w-6 h-6" style={{ color }} />
                   </div>
                 );
               })()}

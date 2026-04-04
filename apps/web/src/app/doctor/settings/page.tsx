@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { User, Save, Calendar, Clock, Stethoscope } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getIcon } from "@/lib/icon-map";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -112,19 +113,25 @@ export default function DoctorSettingsPage() {
           <CardContent>
             <p className="text-xs text-slate-500 mb-4">Select all categories that match your degrees and expertise. You can have multiple.</p>
             <div className="flex flex-wrap gap-2">
-              {allCategories.map((cat: any) => (
-                <button
-                  key={cat.id}
-                  onClick={() => toggleCategory(cat.id)}
-                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                    selectedCatIds.includes(cat.id)
-                      ? "bg-teal-500/20 text-teal-400 border border-teal-500/30"
-                      : "bg-white/5 text-slate-500 border border-white/10"
-                  }`}
-                >
-                  {selectedCatIds.includes(cat.id) ? "✓ " : ""}{cat.icon || ""} {cat.name}
-                </button>
-              ))}
+              {allCategories.map((cat: any) => {
+                const { icon: Icon, color } = getIcon(cat.icon);
+                const selected = selectedCatIds.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => toggleCategory(cat.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      selected
+                        ? "bg-teal-500/20 text-teal-400 border border-teal-500/30"
+                        : "bg-white/5 text-slate-500 border border-white/10"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" style={{ color: selected ? undefined : color }} />
+                    {cat.name}
+                    {selected && <span className="text-teal-400">✓</span>}
+                  </button>
+                );
+              })}
             </div>
             {selectedCatIds.length > 0 && (
               <p className="text-xs text-teal-400 mt-3">
