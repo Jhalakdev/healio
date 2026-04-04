@@ -56,11 +56,27 @@ html {
   }
 }
 
-/* Admin dark theme overrides */
-.admin-dark .card,
-[class*="bg-[#0a0f1a]"] .rounded-2xl {
-  --tw-bg-opacity: 1;
+/* Admin dark theme */
+.admin-dark h1,
+.admin-dark h2,
+.admin-dark h3 { color: #fff; }
+.admin-dark p { color: #94a3b8; }
+.admin-dark [class*="rounded-2xl"] {
+  background: #141c2b;
+  border-color: rgba(255,255,255,0.06);
 }
+.admin-dark [class*="bg-white"] { background: #141c2b; }
+.admin-dark [class*="bg-slate-50"] { background: #0f1520; }
+.admin-dark [class*="bg-slate-100"] { background: rgba(255,255,255,0.05); }
+.admin-dark input, .admin-dark select, .admin-dark textarea {
+  background: #1a2435 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: #fff !important;
+}
+.admin-dark [class*="border-slate"] { border-color: rgba(255,255,255,0.06); }
+.admin-dark [class*="font-bold"] { color: #e2e8f0; }
+.admin-dark [class*="font-extrabold"] { color: #fff; }
+.admin-dark [class*="shadow-"] { box-shadow: none; }
 
 /* Gradient text utility */
 .gradient-text {

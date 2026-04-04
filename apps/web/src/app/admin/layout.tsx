@@ -149,31 +149,8 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main content — dark bg with forced dark text colors */}
-      <main className="flex-1 overflow-auto bg-[#0a0f1a] text-white
-        [&_.text-slate-400]:text-slate-400
-        [&_.text-slate-500]:text-slate-500
-        [&_.font-extrabold]:text-white
-        [&_.font-bold]:text-slate-100
-        [&_h1]:text-white
-        [&_h2]:text-white
-        [&_h3]:text-white
-        [&_.rounded-2xl]:bg-[#141c2b] [&_.rounded-2xl]:border-white/5
-        [&_.bg-white]:bg-[#141c2b]
-        [&_.bg-slate-50]:bg-[#0f1520]
-        [&_.bg-slate-100]:bg-white/5
-        [&_.border-slate-200]:border-white/5
-        [&_.border-slate-200\\/60]:border-white/5
-        [&_input]:bg-[#1a2435] [&_input]:border-white/10 [&_input]:text-white
-        [&_select]:bg-[#1a2435] [&_select]:border-white/10 [&_select]:text-white
-        [&_textarea]:bg-[#1a2435] [&_textarea]:border-white/10 [&_textarea]:text-white
-        [&_.text-sm]:text-slate-300
-        [&_.text-xs]:text-slate-400
-        [&_.border-b]:border-white/5
-        [&_.border-t]:border-white/5
-        [&_.shadow-sm]:shadow-none
-        [&_.shadow-xl]:shadow-none
-      ">
+      {/* Main content — dark */}
+      <main className="flex-1 overflow-auto bg-[#0a0f1a] text-white admin-dark">
         <div className="p-8">{children}</div>
       </main>
     </div>
