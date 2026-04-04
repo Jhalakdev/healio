@@ -16,6 +16,7 @@ import { QueueModule } from './queue/queue.module';
 import { PlansModule } from './plans/plans.module';
 import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 import { PaymentsModule } from './payments/payments.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PaymentsModule } from './payments/payments.module';
     PlansModule,
     PrescriptionsModule,
     PaymentsModule,
+    ReviewsModule,
     ReportsModule,
     VideoModule,
     ChatModule,

@@ -94,6 +94,7 @@ model Patient {
   bookings      Booking[]          @relation("patientBookings")
   reports       Report[]
   subscriptions PatientPlan[]
+  reviews       Review[]
 
   @@map("patients")
 }
@@ -122,6 +123,7 @@ model Doctor {
   bookings  Booking[]         @relation("doctorBookings")
   slots     DoctorSlot[]
   documents DoctorDocument[]
+  reviews   Review[]
 
   @@map("doctors")
 }
@@ -191,6 +193,7 @@ model Booking {
   prescription  Prescription?
   messages      Message[]
   transactions  Transaction[]
+  review        Review?
 
   @@index([doctorId, scheduledAt])
   @@index([patientId, status])
@@ -260,6 +263,26 @@ model Prescription {
   booking Booking @relation(fields: [bookingId], references: [id])
 
   @@map("prescriptions")
+}
+
+// ─── REVIEWS & RATINGS ──────────────────────────────
+
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  doctorId  String
+  patientId String
+  rating    Int      // 1-5 stars
+  comment   String?
+  isAnonymous Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([doctorId, createdAt])
+  @@map("reviews")
 }
 
 // ─── MESSAGING ──────────────────────────────────────
