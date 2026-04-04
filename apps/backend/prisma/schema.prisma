@@ -306,14 +306,21 @@ model Transaction {
 // ─── REPORTS & PRESCRIPTIONS ────────────────────────
 
 model Report {
-  id         String     @id @default(cuid())
-  bookingId  String?
-  patientId  String
-  fileUrl    String
-  fileName   String
-  fileType   ReportType
-  uploadedBy String     // userId
-  createdAt  DateTime   @default(now())
+  id           String     @id @default(cuid())
+  bookingId    String?
+  patientId    String
+  fileUrl      String
+  fileName     String
+  fileType     ReportType
+  uploadedBy   String     // userId
+  expiresAt    DateTime?  // deadline for upload (e.g., 10 days after consultation)
+  createdAt    DateTime   @default(now())
+
+  // Doctor reply to this report
+  doctorReply      String?   // text reply
+  doctorVoiceUrl   String?   // voice note reply
+  doctorRepliedAt  DateTime? // when doctor replied
+  doctorId         String?   // which doctor replied
 
   booking Booking? @relation(fields: [bookingId], references: [id])
   patient Patient  @relation(fields: [patientId], references: [id])

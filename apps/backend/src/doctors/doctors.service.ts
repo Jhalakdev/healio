@@ -480,11 +480,15 @@ export class DoctorsService {
       const gross = Number(b.amountCharged);
       const commission = gross * (commissionPercent / 100);
       const net = gross - commission;
+      const actualDurationMin = b.startedAt && b.endedAt
+        ? Math.round((b.endedAt.getTime() - b.startedAt.getTime()) / 60000)
+        : null;
       return {
         ...b,
         grossAmount: gross,
         commissionDeducted: commission,
         netEarning: net,
+        actualDurationMin,
         patientName: b.forMember?.name || b.patient.name || 'Patient',
       };
     });

@@ -270,6 +270,9 @@ async function main() {
     { key: 'platform_commission_percent', value: 30 },
     { key: 'min_call_duration_for_charge', value: 30 },
     { key: 'max_reschedule_count', value: 1 },
+    { key: 'report_upload_window_days', value: 10 },
+    { key: 'doctor_reply_deadline_hours', value: 24 },
+    { key: 'payout_schedule', value: { day: 'friday', autoEnabled: true } },
   ];
 
   for (const config of configs) {

@@ -131,14 +131,24 @@ export class UsersService {
       }
     })();
 
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: { patientId: patient.id, ...statusFilter },
       include: {
         doctor: { select: { name: true, specialization: true, avatarUrl: true } },
         prescription: true,
         review: true,
+        reports: true,
+        forMember: { select: { name: true, relation: true } },
       },
       orderBy: { scheduledAt: filter === 'upcoming' ? 'asc' : 'desc' },
+    });
+
+    // Compute actual call duration from startedAt/endedAt
+    return bookings.map((b) => {
+      const actualDurationMin = b.startedAt && b.endedAt
+        ? Math.round((b.endedAt.getTime() - b.startedAt.getTime()) / 60000)
+        : null;
+      return { ...b, actualDurationMin };
     });
   }
 
