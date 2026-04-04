@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
+
+const MAX_WALLET_BALANCE = 25000; // ₹25,000 max
 
 @Injectable()
 export class WalletService {
@@ -11,20 +13,34 @@ export class WalletService {
       where: { userId },
     });
     if (!wallet) throw new NotFoundException('Wallet not found');
-    return wallet;
+    return { ...wallet, maxBalance: MAX_WALLET_BALANCE };
   }
 
   async addMoney(userId: string, amount: number) {
+    if (amount <= 0) throw new BadRequestException('Amount must be positive');
+    if (amount > MAX_WALLET_BALANCE) {
+      throw new BadRequestException(`Maximum single top-up is ₹${MAX_WALLET_BALANCE}`);
+    }
+
+    const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
+    const currentBalance = wallet ? Number(wallet.balance) : 0;
+
+    if (currentBalance + amount > MAX_WALLET_BALANCE) {
+      const canAdd = MAX_WALLET_BALANCE - currentBalance;
+      throw new BadRequestException(
+        `Wallet limit is ₹${MAX_WALLET_BALANCE.toLocaleString('en-IN')}. You can add up to ₹${canAdd.toLocaleString('en-IN')} more.`,
+      );
+    }
+
     const decimalAmount = new Decimal(amount);
 
     return this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.upsert({
+      const updated = await tx.wallet.upsert({
         where: { userId },
         create: { userId, balance: decimalAmount },
         update: { balance: { increment: decimalAmount } },
       });
 
-      // Immutable ledger entry
       await tx.transaction.create({
         data: {
           userId,
@@ -34,7 +50,7 @@ export class WalletService {
         },
       });
 
-      return wallet;
+      return { ...updated, maxBalance: MAX_WALLET_BALANCE };
     });
   }
 
