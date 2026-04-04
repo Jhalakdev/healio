@@ -379,10 +379,29 @@ export class BookingsService {
       throw new BadRequestException('Booking is not pending');
     }
 
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: { status: 'CONFIRMED' },
     });
+
+    // Track doctor response time (time from booking creation to acceptance)
+    const responseMin = Math.round(
+      (Date.now() - booking.createdAt.getTime()) / 60000,
+    );
+    // Update rolling average response time
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { id: booking.doctorId },
+    });
+    if (doctor) {
+      const currentAvg = doctor.avgResponseMin || responseMin;
+      const newAvg = Math.round((currentAvg + responseMin) / 2);
+      await this.prisma.doctor.update({
+        where: { id: doctor.id },
+        data: { avgResponseMin: newAvg },
+      });
+    }
+
+    return updated;
   }
 
   // Start session

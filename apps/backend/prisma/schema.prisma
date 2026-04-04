@@ -82,21 +82,55 @@ model User {
 }
 
 model Patient {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  name      String?
-  dob       DateTime?
-  gender    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  name        String?
+  dob         DateTime?
+  gender      String?
+  height      String?  // "5.8 in" / "175 cm"
+  weight      String?  // "70 kg"
+  bloodGroup  String?  // "B+", "O-", etc.
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  user          User               @relation(fields: [userId], references: [id])
-  bookings      Booking[]          @relation("patientBookings")
-  reports       Report[]
-  subscriptions PatientPlan[]
-  reviews       Review[]
+  user           User               @relation(fields: [userId], references: [id])
+  bookings       Booking[]          @relation("patientBookings")
+  reports        Report[]
+  subscriptions  PatientPlan[]
+  reviews        Review[]
+  familyMembers  FamilyMember[]
+  favourites     FavouriteDoctor[]
 
   @@map("patients")
+}
+
+model FamilyMember {
+  id        String   @id @default(cuid())
+  patientId String
+  name      String
+  relation  String   // "spouse", "child", "parent", "sibling", "other"
+  dob       DateTime?
+  gender    String?
+  bloodGroup String?
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@map("family_members")
+}
+
+model FavouriteDoctor {
+  id        String   @id @default(cuid())
+  patientId String
+  doctorId  String
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+
+  @@unique([patientId, doctorId])
+  @@map("favourite_doctors")
 }
 
 model Doctor {
@@ -119,11 +153,13 @@ model Doctor {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
+  avgResponseMin     Int?               // avg response time in minutes
   user      User              @relation(fields: [userId], references: [id])
   bookings  Booking[]         @relation("doctorBookings")
   slots     DoctorSlot[]
   documents DoctorDocument[]
   reviews   Review[]
+  favouritedBy FavouriteDoctor[]
 
   @@map("doctors")
 }
@@ -394,6 +430,22 @@ model AdminPermission {
 
   @@unique([userId, module])
   @@map("admin_permissions")
+}
+
+// ─── NOTIFICATIONS ──────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "appointment_update" | "payment" | "new_service" | "reschedule" | "report" | "prescription"
+  title     String
+  body      String
+  data      Json?    // { bookingId, doctorId, etc. }
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
 }
 
 // ─── AUDIT ──────────────────────────────────────────

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePatientProfileDto } from './dto/update-patient.dto';
 
@@ -9,7 +13,10 @@ export class UsersService {
   async getPatientProfile(userId: string) {
     const patient = await this.prisma.patient.findUnique({
       where: { userId },
-      include: { user: { select: { phone: true, email: true, role: true, createdAt: true } } },
+      include: {
+        user: { select: { phone: true, email: true, role: true, createdAt: true } },
+        familyMembers: { orderBy: { createdAt: 'asc' } },
+      },
     });
 
     if (!patient) throw new NotFoundException('Patient not found');
@@ -23,7 +30,52 @@ export class UsersService {
         name: dto.name,
         dob: dto.dob ? new Date(dto.dob) : undefined,
         gender: dto.gender,
+        height: dto.height,
+        weight: dto.weight,
+        bloodGroup: dto.bloodGroup,
+        avatarUrl: dto.avatarUrl,
       },
+    });
+  }
+
+  // ─── PATIENT BOOKINGS (filtered by status) ────────
+
+  async getPatientBookings(
+    userId: string,
+    filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'all',
+  ) {
+    const patient = await this.prisma.patient.findUnique({
+      where: { userId },
+    });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    const now = new Date();
+    const statusFilter = (() => {
+      switch (filter) {
+        case 'upcoming':
+          return {
+            status: { in: ['PENDING', 'CONFIRMED'] as any[] },
+            scheduledAt: { gte: now },
+          };
+        case 'past':
+          return {
+            status: { in: ['COMPLETED', 'NO_SHOW'] as any[] },
+          };
+        case 'cancelled':
+          return { status: 'CANCELLED' as any };
+        default:
+          return {};
+      }
+    })();
+
+    return this.prisma.booking.findMany({
+      where: { patientId: patient.id, ...statusFilter },
+      include: {
+        doctor: { select: { name: true, specialization: true, avatarUrl: true } },
+        prescription: true,
+        review: true,
+      },
+      orderBy: { scheduledAt: filter === 'upcoming' ? 'asc' : 'desc' },
     });
   }
 
@@ -36,5 +88,124 @@ export class UsersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ─── FAMILY MEMBERS ───────────────────────────────
+
+  async addFamilyMember(
+    userId: string,
+    data: { name: string; relation: string; dob?: string; gender?: string; bloodGroup?: string },
+  ) {
+    const patient = await this.prisma.patient.findUnique({ where: { userId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.familyMember.create({
+      data: {
+        patientId: patient.id,
+        name: data.name,
+        relation: data.relation,
+        dob: data.dob ? new Date(data.dob) : undefined,
+        gender: data.gender,
+        bloodGroup: data.bloodGroup,
+      },
+    });
+  }
+
+  async getFamilyMembers(userId: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { userId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.familyMember.findMany({
+      where: { patientId: patient.id },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async removeFamilyMember(userId: string, memberId: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { userId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    const member = await this.prisma.familyMember.findUnique({
+      where: { id: memberId },
+    });
+    if (!member || member.patientId !== patient.id) {
+      throw new NotFoundException('Family member not found');
+    }
+
+    return this.prisma.familyMember.delete({ where: { id: memberId } });
+  }
+
+  // ─── FAVOURITE DOCTORS ────────────────────────────
+
+  async toggleFavourite(userId: string, doctorId: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { userId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    const existing = await this.prisma.favouriteDoctor.findUnique({
+      where: { patientId_doctorId: { patientId: patient.id, doctorId } },
+    });
+
+    if (existing) {
+      await this.prisma.favouriteDoctor.delete({ where: { id: existing.id } });
+      return { favourited: false };
+    }
+
+    await this.prisma.favouriteDoctor.create({
+      data: { patientId: patient.id, doctorId },
+    });
+    return { favourited: true };
+  }
+
+  async getFavouriteDoctors(userId: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { userId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.favouriteDoctor.findMany({
+      where: { patientId: patient.id },
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            specialization: true,
+            consultationFee: true,
+            avatarUrl: true,
+            isOnline: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ─── CONVERSATIONS / INBOX ────────────────────────
+
+  async getConversations(userId: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { userId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    // Get bookings that have messages, grouped by doctor
+    const bookingsWithMessages = await this.prisma.booking.findMany({
+      where: {
+        patientId: patient.id,
+        messages: { some: {} },
+      },
+      include: {
+        doctor: { select: { id: true, name: true, specialization: true, avatarUrl: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1, // last message only
+          select: { content: true, type: true, createdAt: true, senderId: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return bookingsWithMessages.map((b) => ({
+      bookingId: b.id,
+      doctor: b.doctor,
+      lastMessage: b.messages[0] || null,
+      unreadCount: 0, // TODO: track unread per booking
+    }));
   }
 }

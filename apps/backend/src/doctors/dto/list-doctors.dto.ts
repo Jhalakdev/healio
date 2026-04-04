@@ -3,6 +3,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class ListDoctorsDto {
+  @ApiPropertyOptional({ description: 'Search by doctor name' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()

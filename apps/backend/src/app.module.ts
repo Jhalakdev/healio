@@ -17,6 +17,7 @@ import { PlansModule } from './plans/plans.module';
 import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     PrescriptionsModule,
     PaymentsModule,
     ReviewsModule,
+    NotificationsModule,
     ReportsModule,
     VideoModule,
     ChatModule,

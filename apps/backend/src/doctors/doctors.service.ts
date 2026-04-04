@@ -23,16 +23,22 @@ export class DoctorsService {
         verificationStatus: 'APPROVED',
         ...(query.specialization && { specialization: query.specialization }),
         ...(query.onlineOnly && { id: { in: onlineDoctorIds } }),
+        ...(query.search && {
+          name: { contains: query.search, mode: 'insensitive' as const },
+        }),
       },
       select: {
         id: true,
         name: true,
+        qualification: true,
         specialization: true,
         experience: true,
         consultationFee: true,
         avatarUrl: true,
         isOnline: true,
         lastSeenAt: true,
+        avgResponseMin: true,
+        _count: { select: { reviews: true, bookings: true } },
       },
       orderBy: { name: 'asc' },
     });

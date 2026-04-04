@@ -16,4 +16,24 @@ export class UpdatePatientProfileDto {
   @IsString()
   @IsOptional()
   gender?: string;
+
+  @ApiPropertyOptional({ example: '5.8 ft' })
+  @IsString()
+  @IsOptional()
+  height?: string;
+
+  @ApiPropertyOptional({ example: '70 kg' })
+  @IsString()
+  @IsOptional()
+  weight?: string;
+
+  @ApiPropertyOptional({ example: 'B+' })
+  @IsString()
+  @IsOptional()
+  bloodGroup?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
 }
