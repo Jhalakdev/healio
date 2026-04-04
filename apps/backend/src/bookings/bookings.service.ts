@@ -63,6 +63,16 @@ export class BookingsService {
       'DEFAULT_CONSULTATION_DURATION_MINUTES',
       15,
     );
+
+    // For scheduled bookings: validate slot availability + check conflicts
+    if (dto.mode === 'SCHEDULED') {
+      if (scheduledAt <= new Date()) {
+        throw new BadRequestException('Scheduled time must be in the future');
+      }
+      await this.doctorsService.validateSlotAvailability(doctorId, scheduledAt);
+      await this.doctorsService.checkConflict(doctorId, scheduledAt, defaultDuration);
+    }
+
     const livekitRoom = `room_${uuid()}`;
 
     // Create booking + debit wallet in a transaction
@@ -169,10 +179,28 @@ export class BookingsService {
       );
     }
 
+    const newScheduledAt = new Date(dto.newScheduledAt);
+
+    if (newScheduledAt <= new Date()) {
+      throw new BadRequestException('New time must be in the future');
+    }
+
+    // Validate new time against doctor's slots and existing bookings
+    await this.doctorsService.validateSlotAvailability(
+      booking.doctorId,
+      newScheduledAt,
+    );
+    await this.doctorsService.checkConflict(
+      booking.doctorId,
+      newScheduledAt,
+      booking.durationMin,
+      bookingId, // exclude current booking from conflict check
+    );
+
     return this.prisma.booking.update({
       where: { id: bookingId },
       data: {
-        scheduledAt: new Date(dto.newScheduledAt),
+        scheduledAt: newScheduledAt,
         rescheduled: true,
       },
     });

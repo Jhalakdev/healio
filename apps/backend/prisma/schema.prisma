@@ -110,6 +110,7 @@ model Doctor {
   isOnline           Boolean            @default(false)
   lastSeenAt         DateTime?
   maxSessionsPerDay  Int                @default(20)
+  timezone           String             @default("Asia/Kolkata")
   documentsUrl       String[]           // MBBS cert, registration ID, etc.
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

@@ -52,6 +52,32 @@ async function main() {
     create: { userId: doctorUser.id, balance: 0 },
   });
 
+  // Create doctor slots (Mon-Fri 9am-5pm, with lunch break 1pm-2pm)
+  const doctor1 = await prisma.doctor.findUnique({
+    where: { userId: doctorUser.id },
+  });
+  if (doctor1) {
+    await prisma.doctorSlot.deleteMany({ where: { doctorId: doctor1.id } });
+    for (let day = 1; day <= 5; day++) {
+      // Working hours
+      await prisma.doctorSlot.create({
+        data: { doctorId: doctor1.id, dayOfWeek: day, startTime: '09:00', endTime: '13:00' },
+      });
+      await prisma.doctorSlot.create({
+        data: { doctorId: doctor1.id, dayOfWeek: day, startTime: '14:00', endTime: '17:00' },
+      });
+      // Lunch break
+      await prisma.doctorSlot.create({
+        data: { doctorId: doctor1.id, dayOfWeek: day, startTime: '13:00', endTime: '14:00', isBreak: true },
+      });
+    }
+    // Saturday half day
+    await prisma.doctorSlot.create({
+      data: { doctorId: doctor1.id, dayOfWeek: 6, startTime: '09:00', endTime: '13:00' },
+    });
+    console.log('✅ Doctor slots created (Mon-Fri 9-5, Sat 9-1)');
+  }
+
   // Create Demo Patient
   const patientUser = await prisma.user.upsert({
     where: { phone: '+919876543210' },

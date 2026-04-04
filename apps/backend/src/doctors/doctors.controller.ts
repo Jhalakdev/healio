@@ -36,6 +36,16 @@ export class DoctorsController {
     return this.doctorsService.getDoctorProfile(id);
   }
 
+  @Get(':id/availability')
+  @ApiOperation({ summary: 'Get available time slots for a doctor on a date' })
+  getAvailability(
+    @Param('id') id: string,
+    @Query('date') date: string,
+    @Query('timezone') timezone?: string,
+  ) {
+    return this.doctorsService.getAvailableSlots(id, date, timezone);
+  }
+
   @Patch('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.DOCTOR)
