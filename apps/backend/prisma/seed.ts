@@ -304,6 +304,63 @@ async function main() {
   }
   console.log('✅ 14 symptoms created and linked to specialists');
 
+  // Create lab provider + tests
+  const provider = await prisma.labProvider.upsert({
+    where: { name: 'BlinkCure Labs' },
+    update: {},
+    create: {
+      name: 'BlinkCure Labs',
+      isActive: true,
+      commission: 0,
+    },
+  });
+
+  const labTests = [
+    { name: 'Complete Blood Count (CBC)', category: 'Blood Test', mrp: 500, sellingPrice: 299, costPrice: 150, turnaround: '6 hours', fasting: false },
+    { name: 'Thyroid Profile (T3, T4, TSH)', category: 'Thyroid', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '24 hours', fasting: false },
+    { name: 'Lipid Profile', category: 'Blood Test', mrp: 600, sellingPrice: 349, costPrice: 150, turnaround: '12 hours', fasting: true },
+    { name: 'Liver Function Test (LFT)', category: 'Blood Test', mrp: 700, sellingPrice: 399, costPrice: 180, turnaround: '24 hours', fasting: true },
+    { name: 'Kidney Function Test (KFT)', category: 'Blood Test', mrp: 650, sellingPrice: 379, costPrice: 170, turnaround: '24 hours', fasting: false },
+    { name: 'HbA1c (Diabetes)', category: 'Diabetes', mrp: 500, sellingPrice: 299, costPrice: 120, turnaround: '12 hours', fasting: false },
+    { name: 'Vitamin D', category: 'Vitamin', mrp: 800, sellingPrice: 449, costPrice: 200, turnaround: '24 hours', fasting: false },
+    { name: 'Vitamin B12', category: 'Vitamin', mrp: 700, sellingPrice: 399, costPrice: 180, turnaround: '24 hours', fasting: false },
+    { name: 'Iron Studies', category: 'Blood Test', mrp: 600, sellingPrice: 349, costPrice: 150, turnaround: '24 hours', fasting: true },
+    { name: 'Urine Routine', category: 'Urine Test', mrp: 200, sellingPrice: 149, costPrice: 60, turnaround: '6 hours', fasting: false },
+    // Packages
+    { name: 'Basic Health Checkup', category: 'Full Body Checkup', mrp: 1500, sellingPrice: 799, costPrice: 350, turnaround: '24 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid Profile', 'LFT', 'KFT', 'Urine Routine'] },
+    { name: 'Comprehensive Health Checkup', category: 'Full Body Checkup', mrp: 3500, sellingPrice: 1999, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'Vitamin D', 'B12', 'Iron'] },
+    { name: 'Women Health Package', category: 'Full Body Checkup', mrp: 4000, sellingPrice: 2499, costPrice: 1000, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Thyroid', 'Iron', 'Vitamin D', 'B12', 'Calcium', 'Hormones'] },
+    { name: 'Senior Citizen Package', category: 'Full Body Checkup', mrp: 5000, sellingPrice: 2999, costPrice: 1200, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['CBC', 'Lipid', 'LFT', 'KFT', 'Thyroid', 'HbA1c', 'ECG', 'Urine'] },
+    { name: 'Cancer Screening (Male)', category: 'Cancer Screening', mrp: 8000, sellingPrice: 4999, costPrice: 2500, turnaround: '72 hours', fasting: true, isPackage: true, testsIncluded: ['PSA', 'CEA', 'AFP', 'CA 19-9', 'CBC'] },
+    { name: 'Cancer Screening (Female)', category: 'Cancer Screening', mrp: 8000, sellingPrice: 4999, costPrice: 2500, turnaround: '72 hours', fasting: true, isPackage: true, testsIncluded: ['CA 125', 'CEA', 'AFP', 'CA 15-3', 'CBC'] },
+    { name: 'Allergy Panel (30 Allergens)', category: 'Allergy', mrp: 6000, sellingPrice: 3499, costPrice: 1800, turnaround: '72 hours', fasting: false, isPackage: true, testsIncluded: ['Food allergens', 'Dust', 'Pollen', 'Pet dander'] },
+    { name: 'Fertility Panel (Male)', category: 'Fertility', mrp: 3000, sellingPrice: 1799, costPrice: 800, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['Testosterone', 'FSH', 'LH', 'Prolactin', 'Semen Analysis'] },
+    { name: 'Fertility Panel (Female)', category: 'Fertility', mrp: 3500, sellingPrice: 1999, costPrice: 900, turnaround: '48 hours', fasting: true, isPackage: true, testsIncluded: ['FSH', 'LH', 'Estradiol', 'Prolactin', 'AMH', 'Thyroid'] },
+    { name: 'COVID-19 RT-PCR', category: 'Infection', mrp: 500, sellingPrice: 299, costPrice: 100, turnaround: '24 hours', fasting: false },
+  ];
+
+  for (const test of labTests) {
+    const existing = await prisma.labTest.findFirst({ where: { name: test.name, providerId: provider.id } });
+    if (!existing) {
+      await prisma.labTest.create({
+        data: {
+          providerId: provider.id,
+          name: test.name,
+          category: test.category,
+          mrp: test.mrp,
+          sellingPrice: test.sellingPrice,
+          costPrice: test.costPrice,
+          turnaround: test.turnaround,
+          fasting: test.fasting,
+          homeCollection: true,
+          isPackage: (test as any).isPackage || false,
+          testsIncluded: (test as any).testsIncluded || [],
+        },
+      });
+    }
+  }
+  console.log('✅ 20 lab tests + 1 provider created');
+
   // Set default app configs
   const configs = [
     { key: 'global_consultation_fee', value: 500 },

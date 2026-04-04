@@ -101,6 +101,7 @@ model Patient {
   reviews        Review[]
   familyMembers  FamilyMember[]
   favourites     FavouriteDoctor[]
+  labOrders      LabOrder[]
 
   @@map("patients")
 }
@@ -431,6 +432,131 @@ model Message {
 
   @@index([bookingId, createdAt])
   @@map("messages")
+}
+
+// ─── LAB TESTS ──────────────────────────────────────
+
+// Lab test providers (LabsAdvisor, Thyrocare, etc.)
+model LabProvider {
+  id        String   @id @default(cuid())
+  name      String   @unique // "LabsAdvisor", "Thyrocare"
+  apiKey    String?
+  apiSecret String?
+  baseUrl   String?
+  isActive  Boolean  @default(true)
+  commission Decimal @default(0) @db.Decimal(5, 2) // % we pay them
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tests  LabTest[]
+  orders LabOrder[]
+
+  @@map("lab_providers")
+}
+
+// Available lab tests (synced from provider API or manually added)
+model LabTest {
+  id          String   @id @default(cuid())
+  providerId  String
+  name        String   // "Complete Blood Count (CBC)"
+  code        String?  // provider's test code
+  category    String   // "Blood Test", "Urine Test", "Full Body Checkup", "Thyroid Panel"
+  description String?
+  mrp         Decimal  @db.Decimal(10, 2) // original price
+  sellingPrice Decimal @db.Decimal(10, 2) // our price to patient
+  costPrice   Decimal  @db.Decimal(10, 2) // what we pay provider (B2B price)
+  turnaround  String?  // "6 hours", "24 hours", "48 hours"
+  fasting     Boolean  @default(false) // requires fasting?
+  homeCollection Boolean @default(true)
+  isPackage   Boolean  @default(false) // true = multiple tests bundled
+  testsIncluded String[] // if package: ["CBC", "Thyroid", "Lipid Profile"]
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  provider LabProvider @relation(fields: [providerId], references: [id])
+  orders   LabOrderItem[]
+
+  @@map("lab_tests")
+}
+
+// Lab test order (patient books or doctor orders)
+model LabOrder {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique @default(cuid())
+  patientId       String
+  doctorId        String?  // null if self-booked by patient
+  forMemberId     String?  // if booking for family member
+  providerId      String
+  status          String   @default("pending") // pending | confirmed | sample_collected | processing | report_ready | delivered | cancelled
+  totalMrp        Decimal  @db.Decimal(10, 2)
+  totalAmount     Decimal  @db.Decimal(10, 2) // what patient paid
+  totalCostPrice  Decimal  @db.Decimal(10, 2) // what we pay provider
+  profit          Decimal  @db.Decimal(10, 2) // our margin
+  paymentMethod   String   @default("wallet") // wallet | razorpay
+  paidViaPlan     Boolean  @default(false)
+  couponCode      String?
+  discount        Decimal  @default(0) @db.Decimal(10, 2)
+  // Collection details
+  collectionDate  DateTime?
+  collectionTime  String?  // "09:00 AM - 11:00 AM"
+  collectionAddress String?
+  collectionCity  String?
+  collectionPincode String?
+  // Patient details
+  patientName     String
+  patientAge      Int?
+  patientGender   String?
+  patientPhone    String?
+  // Tracking
+  providerOrderId String?  // order ID from lab provider
+  phlebotomistName String?
+  phlebotomistPhone String?
+  sampleCollectedAt DateTime?
+  reportReadyAt   DateTime?
+  notes           String?  // doctor's notes or special instructions
+  bookingId       String?  // linked consultation (if doctor ordered)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  patient  Patient      @relation(fields: [patientId], references: [id])
+  provider LabProvider  @relation(fields: [providerId], references: [id])
+  items    LabOrderItem[]
+  reports  LabReport[]
+
+  @@index([patientId, status])
+  @@index([status, createdAt])
+  @@map("lab_orders")
+}
+
+// Individual tests in an order
+model LabOrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  testId    String
+  testName  String
+  price     Decimal @db.Decimal(10, 2)
+  costPrice Decimal @db.Decimal(10, 2)
+
+  order LabOrder @relation(fields: [orderId], references: [id])
+  test  LabTest  @relation(fields: [testId], references: [id])
+
+  @@map("lab_order_items")
+}
+
+// Lab reports (PDF files)
+model LabReport {
+  id          String   @id @default(cuid())
+  orderId     String
+  fileName    String
+  fileUrl     String   // stored on R2
+  reportType  String   @default("final") // "partial" | "final"
+  uploadedAt  DateTime @default(now())
+
+  order LabOrder @relation(fields: [orderId], references: [id])
+
+  @@map("lab_reports")
 }
 
 // ─── ADMIN ──────────────────────────────────────────

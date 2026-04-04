@@ -19,6 +19,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CategoriesModule } from './categories/categories.module';
+import { LabTestsModule } from './lab-tests/lab-tests.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { CategoriesModule } from './categories/categories.module';
     ReviewsModule,
     NotificationsModule,
     CategoriesModule,
+    LabTestsModule,
     ReportsModule,
     VideoModule,
     ChatModule,
