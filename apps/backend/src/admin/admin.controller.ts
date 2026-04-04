@@ -374,4 +374,17 @@ export class AdminController {
   listPayouts(@Query('page') page?: number) {
     return this.adminService.listAllPayouts(page || 1);
   }
+
+  // ─── DOCTOR CATEGORIES (multi-assign) ─────────────
+  @Post('doctors/:id/categories')
+  @ApiOperation({ summary: 'Assign multiple categories to a doctor' })
+  setDoctorCategories(@Param('id') id: string, @Body('categoryIds') categoryIds: string[]) {
+    return this.adminService.setDoctorCategories(id, categoryIds);
+  }
+
+  @Get('doctors/:id/categories')
+  @ApiOperation({ summary: 'Get doctor categories' })
+  getDoctorCategories(@Param('id') id: string) {
+    return this.adminService.getDoctorCategories(id);
+  }
 }

@@ -109,6 +109,27 @@ export class DoctorsController {
     return this.doctorsService.uploadDocument(user.userId, type, file);
   }
 
+  @Post('me/categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set doctor specialization categories (multi-select)' })
+  setCategories(
+    @CurrentUser() user: CurrentUserData,
+    @Body('categoryIds') categoryIds: string[],
+  ) {
+    return this.doctorsService.setCategories(user.userId, categoryIds);
+  }
+
+  @Get('me/categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get doctor categories' })
+  getMyCategories(@CurrentUser() user: CurrentUserData) {
+    return this.doctorsService.getMyCategories(user.userId);
+  }
+
   @Get('me/documents')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.DOCTOR)

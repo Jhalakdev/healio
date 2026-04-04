@@ -670,4 +670,25 @@ export class AdminService {
     ]);
     return { data: payouts, meta: { total, page, limit } };
   }
+
+  // ─── DOCTOR CATEGORIES (multi-assign) ───────────
+  async setDoctorCategories(doctorId: string, categoryIds: string[]) {
+    await this.prisma.doctorCategory.deleteMany({ where: { doctorId } });
+    if (categoryIds.length > 0) {
+      await this.prisma.doctorCategory.createMany({
+        data: categoryIds.map((categoryId) => ({ doctorId, categoryId })),
+      });
+    }
+    return this.prisma.doctorCategory.findMany({
+      where: { doctorId },
+      include: { category: { select: { id: true, name: true, icon: true } } },
+    });
+  }
+
+  async getDoctorCategories(doctorId: string) {
+    return this.prisma.doctorCategory.findMany({
+      where: { doctorId },
+      include: { category: { select: { id: true, name: true, icon: true } } },
+    });
+  }
 }

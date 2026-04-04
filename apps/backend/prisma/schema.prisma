@@ -151,18 +151,32 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  doctors Doctor[]
+  doctors DoctorCategory[]
 
   @@map("categories")
+}
+
+// Many-to-many: a doctor can have multiple specializations/degrees
+model DoctorCategory {
+  id         String   @id @default(cuid())
+  doctorId   String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  doctor   Doctor   @relation(fields: [doctorId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([doctorId, categoryId])
+  @@map("doctor_categories")
 }
 
 model Doctor {
   id                 String             @id @default(cuid())
   userId             String             @unique
   name               String
-  qualification      String?
-  specialization     String?            // legacy text field
-  categoryId         String?            // links to admin-managed Category
+  qualifications     String[]           // multiple degrees: ["MBBS", "MD Cardiology", "DM Gynecology"]
+  specialization     String?            // legacy text field (kept for backward compat)
+  categoryId         String?            // legacy single category (kept for backward compat)
   experience         Int?               // years
   consultationFee    Decimal            @default(0) @db.Decimal(10, 2)
   bio                String?
@@ -184,7 +198,7 @@ model Doctor {
   updatedAt          DateTime           @updatedAt
 
   avgResponseMin     Int?               // avg response time in minutes
-  category  Category?         @relation(fields: [categoryId], references: [id])
+  categories DoctorCategory[]  // multiple specializations
   user      User              @relation(fields: [userId], references: [id])
   payouts   DoctorPayout[]
   bookings  Booking[]         @relation("doctorBookings")

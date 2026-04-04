@@ -22,16 +22,25 @@ export class DoctorsService {
       where: {
         verificationStatus: 'APPROVED',
         ...(query.specialization && { specialization: query.specialization }),
-        ...(query.categoryId && { categoryId: query.categoryId }),
+        // Multi-category: if categoryId provided, find doctors who have this category in their list
+        ...(query.categoryId && {
+          categories: { some: { categoryId: query.categoryId } },
+        }),
         ...(query.onlineOnly && { id: { in: onlineDoctorIds } }),
         ...(query.search && {
-          name: { contains: query.search, mode: 'insensitive' as const },
+          OR: [
+            { name: { contains: query.search, mode: 'insensitive' as const } },
+            { specialization: { contains: query.search, mode: 'insensitive' as const } },
+            { qualifications: { has: query.search } },
+            // Search in linked category names
+            { categories: { some: { category: { name: { contains: query.search, mode: 'insensitive' as const } } } } },
+          ],
         }),
       },
       select: {
         id: true,
         name: true,
-        qualification: true,
+        qualifications: true,
         specialization: true,
         experience: true,
         consultationFee: true,
@@ -39,6 +48,7 @@ export class DoctorsService {
         isOnline: true,
         lastSeenAt: true,
         avgResponseMin: true,
+        categories: { include: { category: { select: { id: true, name: true, icon: true } } } },
         _count: { select: { reviews: true, bookings: true } },
       },
       orderBy: { name: 'asc' },
@@ -388,6 +398,52 @@ export class DoctorsService {
         fileUrl: await this.storage.getSignedUrl(doc.fileUrl),
       })),
     );
+  }
+
+  // ─── CATEGORIES (multi-select) ─────────────────────
+
+  async setCategories(userId: string, categoryIds: string[]) {
+    const doctor = await this.getDoctorByUserId(userId);
+
+    // Remove existing
+    await this.prisma.doctorCategory.deleteMany({ where: { doctorId: doctor.id } });
+
+    // Add new
+    if (categoryIds.length > 0) {
+      await this.prisma.doctorCategory.createMany({
+        data: categoryIds.map((categoryId) => ({
+          doctorId: doctor.id,
+          categoryId,
+        })),
+      });
+    }
+
+    return this.prisma.doctorCategory.findMany({
+      where: { doctorId: doctor.id },
+      include: { category: { select: { id: true, name: true, icon: true } } },
+    });
+  }
+
+  async getMyCategories(userId: string) {
+    const doctor = await this.getDoctorByUserId(userId);
+    return this.prisma.doctorCategory.findMany({
+      where: { doctorId: doctor.id },
+      include: { category: { select: { id: true, name: true, icon: true } } },
+    });
+  }
+
+  // Admin: assign categories to a doctor
+  async adminSetCategories(doctorId: string, categoryIds: string[]) {
+    await this.prisma.doctorCategory.deleteMany({ where: { doctorId } });
+    if (categoryIds.length > 0) {
+      await this.prisma.doctorCategory.createMany({
+        data: categoryIds.map((categoryId) => ({ doctorId, categoryId })),
+      });
+    }
+    return this.prisma.doctorCategory.findMany({
+      where: { doctorId },
+      include: { category: { select: { id: true, name: true } } },
+    });
   }
 
   // ─── BANK / UPI DETAILS ───────────────────────────
