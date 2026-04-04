@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingMode {
+  INSTANT
+  SCHEDULED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  REFUND
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VOICE
+  FILE
+}
+
+enum ReportType {
+  PDF
+  IMAGE
+}
+
+// ─── USERS ──────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String?  @unique
+  email     String?  @unique
+  password  String?
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor       Doctor?
+  patient      Patient?
+  wallets      Wallet[]
+  sentMessages Message[] @relation("sender")
+
+  @@map("users")
+}
+
+model Patient {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String?
+  dob       DateTime?
+  gender    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  bookings Booking[] @relation("patientBookings")
+  reports  Report[]
+
+  @@map("patients")
+}
+
+model Doctor {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  name               String
+  qualification      String?
+  specialization     String?
+  experience         Int?               // years
+  consultationFee    Decimal            @default(0) @db.Decimal(10, 2)
+  bio                String?
+  avatarUrl          String?
+  verificationStatus VerificationStatus @default(PENDING)
+  isOnline           Boolean            @default(false)
+  lastSeenAt         DateTime?
+  maxSessionsPerDay  Int                @default(20)
+  documentsUrl       String[]           // MBBS cert, registration ID, etc.
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id])
+  bookings  Booking[]  @relation("doctorBookings")
+  slots     DoctorSlot[]
+
+  @@map("doctors")
+}
+
+// ─── DOCTOR SCHEDULING ──────────────────────────────
+
+model DoctorSlot {
+  id        String   @id @default(cuid())
+  doctorId  String
+  dayOfWeek Int      // 0=Sunday, 6=Saturday
+  startTime String   // "09:00"
+  endTime   String   // "17:00"
+  isBreak   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@map("doctor_slots")
+}
+
+// ─── BOOKINGS ───────────────────────────────────────
+
+model Booking {
+  id            String        @id @default(cuid())
+  patientId     String
+  doctorId      String
+  mode          BookingMode
+  status        BookingStatus @default(PENDING)
+  scheduledAt   DateTime
+  startedAt     DateTime?
+  endedAt       DateTime?
+  durationMin   Int           @default(15)
+  extended      Boolean       @default(false)
+  rescheduled   Boolean       @default(false)
+  cancelReason  String?
+  livekitRoom   String?       @unique
+  amountCharged Decimal       @default(0) @db.Decimal(10, 2)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Pre-consult intake
+  symptoms    String?
+  medications String?
+
+  patient       Patient        @relation("patientBookings", fields: [patientId], references: [id])
+  doctor        Doctor         @relation("doctorBookings", fields: [doctorId], references: [id])
+  reports       Report[]
+  prescription  Prescription?
+  messages      Message[]
+  transactions  Transaction[]
+
+  @@index([doctorId, scheduledAt])
+  @@index([patientId, status])
+  @@map("bookings")
+}
+
+// ─── FINANCIAL ──────────────────────────────────────
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String
+  balance   Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
+  @@map("wallets")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  bookingId   String?
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType
+  status      PaymentStatus   @default(SUCCESS)
+  description String?
+  metadata    Json?           // flexible extra data
+  createdAt   DateTime        @default(now())
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([bookingId])
+  @@map("transactions")
+}
+
+// ─── REPORTS & PRESCRIPTIONS ────────────────────────
+
+model Report {
+  id         String     @id @default(cuid())
+  bookingId  String?
+  patientId  String
+  fileUrl    String
+  fileName   String
+  fileType   ReportType
+  uploadedBy String     // userId
+  createdAt  DateTime   @default(now())
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+  patient Patient  @relation(fields: [patientId], references: [id])
+
+  @@map("reports")
+}
+
+model Prescription {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  fileUrl   String?
+  content   String?  // text content, auto-converted to PDF
+  notes     String?
+  voiceUrl  String?
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("prescriptions")
+}
+
+// ─── MESSAGING ──────────────────────────────────────
+
+model Message {
+  id        String      @id @default(cuid())
+  bookingId String
+  senderId  String
+  type      MessageType @default(TEXT)
+  content   String
+  fileUrl   String?
+  createdAt DateTime    @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  sender  User    @relation("sender", fields: [senderId], references: [id])
+
+  @@index([bookingId, createdAt])
+  @@map("messages")
+}
+
+// ─── ADMIN ──────────────────────────────────────────
+
+model AppConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value Json
+  updatedAt DateTime @updatedAt
+
+  @@map("app_configs")
+}
+
+model Coupon {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  discountType   String    // "flat" | "percentage"
+  discountValue  Decimal   @db.Decimal(10, 2)
+  maxUsage       Int       @default(0) // 0 = unlimited
+  usedCount      Int       @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  @@map("coupons")
+}
+
+model Plan {
+  id              String   @id @default(cuid())
+  name            String
+  price           Decimal  @db.Decimal(10, 2)
+  consultations   Int      // number of consultations included
+  validityDays    Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("plans")
+}
+
+// ─── AUDIT ──────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}

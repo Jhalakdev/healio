@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: healio-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: healio
+      POSTGRES_PASSWORD: healio_dev
+      POSTGRES_DB: healio
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: healio-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: healio-livekit
+    restart: unless-stopped
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      LIVEKIT_KEYS: "devkey: secret"
+    command: --dev --bind 0.0.0.0
+
+  # TURN server for NAT traversal (critical for video call quality)
+  coturn:
+    image: coturn/coturn:latest
+    container_name: healio-coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "5349:5349"
+      - "5349:5349/udp"
+      - "49152-49200:49152-49200/udp"
+    command: >
+      -n
+      --log-file=stdout
+      --min-port=49152
+      --max-port=49200
+      --realm=healio.in
+      --fingerprint
+      --lt-cred-mech
+      --user=healio:healio_turn_dev
+      --no-cli
+
+volumes:
+  postgres_data:
+  redis_data:
