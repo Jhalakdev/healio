@@ -4,7 +4,7 @@ let _tokens: { access: string | null; refresh: string | null } = {
   refresh: null,
 };
 
-const API_BASE = __DEV__ ? 'http://192.168.0.101:3000' : 'https://api.healio.in';
+const API_BASE = 'http://45.196.196.154';
 
 export function getToken(): string | null {
   return _tokens.access;
