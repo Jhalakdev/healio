@@ -68,31 +68,44 @@ export default function DoctorDashboardHome() {
     ]).finally(() => setLoading(false));
   }, []);
 
+  const [error, setError] = useState("");
+
   const go = async (to: number) => {
-    await adminApi("/doctors/me/onboarding", { method: "PATCH", body: JSON.stringify({ step: to }) });
-    setStep(to);
-    // Refresh profile to get latest docs
-    const p = await adminApi("/doctors/me/profile");
-    setProfile(p);
+    try {
+      await adminApi("/doctors/me/onboarding", { method: "PATCH", body: JSON.stringify({ step: to }) });
+      setStep(to);
+      const p = await adminApi("/doctors/me/profile");
+      setProfile(p);
+    } catch (e: any) {
+      setError(e.message || "Failed to save. Please re-login and try again.");
+      if (e.message?.includes("Unauthorized")) {
+        localStorage.removeItem("token");
+        window.location.href = "/auth/login";
+      }
+    }
   };
 
   const saveProfile = async () => {
-    setSaving(true);
-    await adminApi("/doctors/me", { method: "PATCH", body: JSON.stringify({ name, bio, experience: Number(exp) || undefined, maxSessionsPerDay: Number(maxSess) || 20 }) });
-    await go(1);
+    setSaving(true); setError("");
+    try {
+      await adminApi("/doctors/me", { method: "PATCH", body: JSON.stringify({ name, bio, experience: Number(exp) || undefined, maxSessionsPerDay: Number(maxSess) || 20 }) });
+      await go(2); // profile done → go to specializations
+    } catch (e: any) { setError(e.message || "Failed to save profile"); }
     setSaving(false);
   };
 
   const saveCats = async () => {
-    setSaving(true);
-    await adminApi("/doctors/me/categories", { method: "POST", body: JSON.stringify({ categoryIds: selCats }) });
-    await go(2);
+    setSaving(true); setError("");
+    try {
+      await adminApi("/doctors/me/categories", { method: "POST", body: JSON.stringify({ categoryIds: selCats }) });
+      await go(3); // specs done → go to documents
+    } catch (e: any) { setError(e.message || "Failed to save categories"); }
     setSaving(false);
   };
 
   const submitForReview = async () => {
-    setSaving(true);
-    await go(4);
+    setSaving(true); setError("");
+    try { await go(4); } catch (e: any) { setError(e.message || "Failed to submit"); }
     setSaving(false);
   };
 
@@ -186,18 +199,30 @@ export default function DoctorDashboardHome() {
           </Card>
         )}
 
-        {/* Progress (steps 1-3 only) */}
-        {step >= 1 && step < 4 && (
+        {/* Progress bar (steps 1,2,3 only) */}
+        {step >= 1 && step <= 3 && (
           <div className="flex items-center gap-1 mb-8">
-            {["Profile", "Specializations", "Documents"].map((l, i) => (
-              <div key={l} className="flex items-center gap-2 flex-1">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${step > i ? "bg-teal-500 text-white" : step === i + 1 ? "bg-teal-500/30 text-teal-400 ring-2 ring-teal-500/50" : "bg-white/10 text-slate-600"}`}>
-                  {step > i ? "✓" : i + 1}
+            {["Profile", "Specializations", "Documents"].map((l, i) => {
+              const stepNum = i + 1; // 1, 2, 3
+              const done = step > stepNum;
+              const current = step === stepNum;
+              return (
+                <div key={l} className="flex items-center gap-2 flex-1">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${done ? "bg-teal-500 text-white" : current ? "bg-teal-500/30 text-teal-400 ring-2 ring-teal-500/50" : "bg-white/10 text-slate-600"}`}>
+                    {done ? "✓" : stepNum}
+                  </div>
+                  <span className={`text-xs ${done || current ? "text-slate-300" : "text-slate-600"}`}>{l}</span>
+                  {i < 2 && <div className={`flex-1 h-1 rounded ${done ? "bg-teal-500" : "bg-white/10"}`} />}
                 </div>
-                <span className={`text-xs ${step >= i + 1 ? "text-slate-300" : "text-slate-600"}`}>{l}</span>
-                {i < 2 && <div className={`flex-1 h-1 rounded ${step > i + 1 ? "bg-teal-500" : "bg-white/10"}`} />}
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        )}
+
+        {/* Error display */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {error}
           </div>
         )}
 
@@ -209,14 +234,14 @@ export default function DoctorDashboardHome() {
             </div>
             <h1 className="text-5xl font-extrabold mb-4">Welcome to Healio!</h1>
             <p className="text-xl text-slate-400 max-w-md mb-10">Let&apos;s set up your doctor profile. Takes about 2 minutes.</p>
-            <Button size="lg" className="text-lg px-10 py-6 rounded-2xl" onClick={() => setStep(0.5)}>
+            <Button size="lg" className="text-lg px-10 py-6 rounded-2xl" onClick={() => setStep(1)}>
               Let&apos;s Get Started <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
         )}
 
         {/* ── STEP 1: Profile ── */}
-        {(step === 0.5 || step === 1) && (
+        {step === 1 && (
           <div className="flex-1">
             <h2 className="text-3xl font-extrabold mb-2">Your Profile</h2>
             <p className="text-slate-400 mb-8">Tell patients about yourself</p>
@@ -282,7 +307,7 @@ export default function DoctorDashboardHome() {
         )}
 
         {/* ── STEP 3: Documents (REAL UPLOAD) ── */}
-        {(step === 3 || step === 2.5) && (
+        {step === 3 && (
           <div className="flex-1">
             <h2 className="text-3xl font-extrabold mb-2">Upload Documents</h2>
             <p className="text-slate-400 mb-8">Upload your medical credentials for verification</p>
