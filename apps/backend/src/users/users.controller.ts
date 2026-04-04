@@ -75,7 +75,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Add a family member' })
   addFamilyMember(
     @CurrentUser() user: CurrentUserData,
-    @Body() body: { name: string; relation: string; dob?: string; gender?: string; bloodGroup?: string },
+    @Body() body: { name: string; relation: string; dob: string; isChild?: boolean; gender?: string; bloodGroup?: string; photoUrl?: string; phoneNumber?: string },
   ) {
     return this.usersService.addFamilyMember(user.userId, body);
   }

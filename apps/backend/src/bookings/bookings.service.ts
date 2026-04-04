@@ -34,11 +34,11 @@ export class BookingsService {
     });
     if (!patient) throw new NotFoundException('Patient not found');
 
-    let doctorId = dto.doctorId;
+    let doctorId: string | undefined = dto.doctorId;
 
     // Instant mode: use matching engine if no doctor specified
     if (dto.mode === 'INSTANT' && !doctorId) {
-      doctorId = await this.doctorsService.findAvailableDoctor(dto.specialization);
+      doctorId = (await this.doctorsService.findAvailableDoctor(dto.specialization)) || undefined;
       if (!doctorId) {
         throw new BadRequestException('No doctors available right now');
       }

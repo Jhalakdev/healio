@@ -1,24 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import multipart from '@fastify/multipart';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: true }),
-  );
+  const app = await NestFactory.create(AppModule);
 
   const config = app.get(ConfigService);
-
-  // File uploads (10MB max)
-  await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -30,9 +19,8 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
-  const origins = config.get<string>('CORS_ORIGINS', '').split(',');
-  app.enableCors({ origin: origins, credentials: true });
+  // CORS — allow all origins for dev
+  app.enableCors({ origin: true, credentials: true });
 
   // Swagger
   const swaggerConfig = new DocumentBuilder()
@@ -45,7 +33,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = config.get<number>('PORT', 3000);
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
   console.log(`🚀 Healio API running on http://localhost:${port}`);
   console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
 }

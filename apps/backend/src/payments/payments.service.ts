@@ -225,7 +225,7 @@ export class PaymentsService {
       throw new BadRequestException('Failed to create Razorpay order');
     }
 
-    return res.json();
+    return res.json() as Promise<{ id: string; amount: number; currency: string }>;
   }
 
   // Get payment history for a user
@@ -261,7 +261,7 @@ export class PaymentsService {
       },
     });
 
-    const results = [];
+    const results: any[] = [];
 
     for (const doctor of doctors) {
       // Sum doctor's earnings (CREDIT transactions) for this period
@@ -357,7 +357,7 @@ export class PaymentsService {
     });
 
     if (!res.ok) throw new Error('Payout failed');
-    return res.json();
+    return res.json() as Promise<{ id: string }>;
   }
 
   // Admin: get payout settings

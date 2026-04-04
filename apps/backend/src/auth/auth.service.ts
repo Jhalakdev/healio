@@ -86,7 +86,7 @@ export class AuthService {
 
     // Check if this phone is listed as a family member in another account
     // If so, link this user's account to that family member record
-    let familyPlan = null;
+    let familyPlan: any = null;
     const familyMemberRecord = await this.prisma.familyMember.findFirst({
       where: { phoneNumber: phone, linkedUserId: null },
       include: {
