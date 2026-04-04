@@ -1,343 +1,159 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Users,
-  Stethoscope,
-  CalendarCheck,
-  IndianRupee,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  PhoneCall,
-  Clock,
-  Activity,
-  Video,
+  Users, Stethoscope, CalendarCheck, IndianRupee, Video, Clock, Activity,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
-
-const revenueData = [
-  { name: "Mon", revenue: 12400, consultations: 32 },
-  { name: "Tue", revenue: 18600, consultations: 45 },
-  { name: "Wed", revenue: 15800, consultations: 38 },
-  { name: "Thu", revenue: 22400, consultations: 56 },
-  { name: "Fri", revenue: 19200, consultations: 48 },
-  { name: "Sat", revenue: 24600, consultations: 62 },
-  { name: "Sun", revenue: 16800, consultations: 42 },
-];
-
-const hourlyData = [
-  { hour: "6am", calls: 3 },
-  { hour: "8am", calls: 12 },
-  { hour: "10am", calls: 28 },
-  { hour: "12pm", calls: 35 },
-  { hour: "2pm", calls: 30 },
-  { hour: "4pm", calls: 25 },
-  { hour: "6pm", calls: 38 },
-  { hour: "8pm", calls: 42 },
-  { hour: "10pm", calls: 18 },
-];
-
-const recentBookings = [
-  { patient: "Rahul K.", doctor: "Dr. Priya Sharma", status: "IN_PROGRESS", time: "2 min ago", amount: 500 },
-  { patient: "Anita M.", doctor: "Dr. Amit Verma", status: "COMPLETED", time: "15 min ago", amount: 700 },
-  { patient: "Suresh P.", doctor: "Dr. Priya Sharma", status: "CONFIRMED", time: "22 min ago", amount: 500 },
-  { patient: "Meera T.", doctor: "Dr. Neha Gupta", status: "COMPLETED", time: "45 min ago", amount: 600 },
-  { patient: "Vikram S.", doctor: "Dr. Amit Verma", status: "CANCELLED", time: "1 hr ago", amount: 700 },
-];
-
-const topDoctors = [
-  { name: "Dr. Priya Sharma", specialty: "General", consults: 156, earnings: 54600, rating: 4.9 },
-  { name: "Dr. Amit Verma", specialty: "Dermatology", consults: 132, earnings: 66000, rating: 4.8 },
-  { name: "Dr. Neha Gupta", specialty: "Pediatrics", consults: 98, earnings: 39200, rating: 4.9 },
-  { name: "Dr. Raj Patel", specialty: "Cardiology", consults: 87, earnings: 60900, rating: 4.7 },
-];
-
-const statusColor: Record<string, string> = {
-  IN_PROGRESS: "online",
-  COMPLETED: "success",
-  CONFIRMED: "default",
-  CANCELLED: "destructive",
-  PENDING: "warning",
-};
+import { Button } from "@/components/ui/button";
+import { adminApi } from "@/lib/admin-api";
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const [dash, setDash] = useState<any>({});
+  const [analytics, setAnalytics] = useState<any>({});
+  const [bookings, setBookings] = useState<any>({ data: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      adminApi("/admin/dashboard").then(setDash).catch(() => {}),
+      adminApi("/admin/analytics").then(setAnalytics).catch(() => {}),
+      adminApi("/admin/bookings?limit=5").then(setBookings).catch(() => {}),
+    ]).finally(() => setLoading(false));
+  }, []);
+
+  const statusColor: Record<string, string> = {
+    IN_PROGRESS: "online", COMPLETED: "success", CONFIRMED: "default",
+    CANCELLED: "destructive", PENDING: "warning", NO_SHOW: "destructive",
+  };
+
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Dashboard</h1>
-          <p className="text-slate-400 mt-1">
-            Welcome back. Here&apos;s what&apos;s happening today.
-          </p>
+          <p className="text-slate-400 mt-1">Platform overview — live data</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-100">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-2 h-2 rounded-full bg-emerald-500 pulse-online" />
-            <span className="text-sm font-semibold text-emerald-700">
-              8 doctors online
+            <span className="text-sm font-semibold text-emerald-400">
+              {dash.onlineDoctors || 0} doctors online
             </span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 border border-blue-100">
-            <Video className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-semibold text-blue-700">
-              3 live calls
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <Video className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-semibold text-blue-400">
+              {dash.activeSessions || 0} live calls
             </span>
           </div>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          {
-            title: "Total Revenue",
-            value: "₹1,29,800",
-            change: "+12.5%",
-            trend: "up",
-            icon: IndianRupee,
-            color: "from-emerald-500 to-green-600",
-            bgLight: "bg-emerald-50",
-          },
-          {
-            title: "Today's Bookings",
-            value: "48",
-            change: "+8.2%",
-            trend: "up",
-            icon: CalendarCheck,
-            color: "from-blue-500 to-cyan-600",
-            bgLight: "bg-blue-50",
-          },
-          {
-            title: "Active Patients",
-            value: "12,340",
-            change: "+4.1%",
-            trend: "up",
-            icon: Users,
-            color: "from-violet-500 to-purple-600",
-            bgLight: "bg-violet-50",
-          },
-          {
-            title: "Avg Session Time",
-            value: "13.2 min",
-            change: "-0.8 min",
-            trend: "down",
-            icon: Clock,
-            color: "from-orange-500 to-amber-600",
-            bgLight: "bg-orange-50",
-          },
-        ].map((stat, i) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-          >
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}
-                  >
-                    <stat.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div
-                    className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-                      stat.trend === "up"
-                        ? "text-emerald-700 bg-emerald-50"
-                        : "text-orange-700 bg-orange-50"
-                    }`}
-                  >
-                    {stat.trend === "up" ? (
-                      <ArrowUpRight className="w-3 h-3" />
-                    ) : (
-                      <ArrowDownRight className="w-3 h-3" />
-                    )}
-                    {stat.change}
-                  </div>
+          { title: "Total Revenue", value: `₹${Number(dash.totalRevenue || 0).toLocaleString("en-IN")}`, icon: IndianRupee, color: "from-emerald-500 to-green-600" },
+          { title: "Today's Revenue", value: `₹${Number(dash.todayRevenue || 0).toLocaleString("en-IN")}`, icon: IndianRupee, color: "from-blue-500 to-cyan-600" },
+          { title: "Total Patients", value: dash.totalPatients || 0, icon: Users, color: "from-violet-500 to-purple-600" },
+          { title: "Total Doctors", value: dash.totalDoctors || 0, icon: Stethoscope, color: "from-orange-500 to-amber-600" },
+        ].map((stat) => (
+          <Card key={stat.title}>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
+                  <stat.icon className="w-5 h-5 text-white" />
                 </div>
-                <p className="text-2xl font-extrabold tracking-tight">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">{stat.title}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
+              </div>
+              <p className="text-2xl font-extrabold">{loading ? "..." : stat.value}</p>
+              <p className="text-xs text-slate-500 mt-1">{stat.title}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Charts row */}
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Revenue chart */}
-        <Card className="lg:col-span-2">
+      {/* Recent bookings + top doctors */}
+      <div className="grid lg:grid-cols-2 gap-5">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">Revenue Overview</CardTitle>
-            <Badge variant="secondary">This Week</Badge>
+            <CardTitle className="text-base">Recent Bookings</CardTitle>
+            <Button size="sm" variant="outline" onClick={() => router.push("/admin/bookings")}>
+              View all
+            </Button>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                  }}
-                  formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, "Revenue"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#0d9488"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#colorRevenue)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {bookings.data?.length > 0 ? (
+              <div className="space-y-3">
+                {bookings.data.slice(0, 5).map((b: any) => (
+                  <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                    <div>
+                      <p className="text-sm font-bold">{b.patient?.name || "Patient"} → {b.doctor?.name || "Doctor"}</p>
+                      <p className="text-xs text-slate-500">{new Date(b.scheduledAt).toLocaleString()} · ₹{b.amountCharged}</p>
+                    </div>
+                    <Badge variant={statusColor[b.status] as any}>{b.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-slate-500 text-sm">No bookings yet.</p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Hourly distribution */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Hourly Distribution</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">Top Doctors</CardTitle>
+            <Button size="sm" variant="outline" onClick={() => router.push("/admin/doctors")}>
+              View all
+            </Button>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={hourlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "12px",
-                  }}
-                />
-                <Bar dataKey="calls" fill="#0d9488" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {Array.isArray(analytics.topDoctors) && analytics.topDoctors.length > 0 ? (
+              <div className="space-y-3">
+                {analytics.topDoctors.slice(0, 5).map((d: any, i: number) => (
+                  <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
+                    <span className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center text-sm font-bold text-teal-400">
+                      #{i + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">{d.name}</p>
+                      <p className="text-xs text-slate-500">{d.total_consultations} consults</p>
+                    </div>
+                    <p className="font-bold text-emerald-400">₹{Number(d.total_earnings || 0).toLocaleString("en-IN")}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-slate-500 text-sm">Complete consultations to see rankings.</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid lg:grid-cols-2 gap-5">
-        {/* Recent bookings */}
+      {/* Quick stats */}
+      <div className="grid grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">Recent Bookings</CardTitle>
-            <Badge variant="outline" className="cursor-pointer hover:bg-slate-50">
-              View all
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentBookings.map((booking, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-9 h-9">
-                      <AvatarFallback className="text-xs">
-                        {booking.patient.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-semibold">{booking.patient}</p>
-                      <p className="text-xs text-slate-400">
-                        {booking.doctor} · {booking.time}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold">
-                      ₹{booking.amount}
-                    </span>
-                    <Badge
-                      variant={
-                        statusColor[booking.status] as any
-                      }
-                    >
-                      {booking.status.replace("_", " ")}
-                    </Badge>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+          <CardContent className="p-5 text-center">
+            <Activity className="w-6 h-6 mx-auto text-orange-400 mb-2" />
+            <p className="text-2xl font-extrabold">{dash.failedConsultations || 0}</p>
+            <p className="text-xs text-slate-500">Failed/Cancelled</p>
           </CardContent>
         </Card>
-
-        {/* Top doctors */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">Top Doctors</CardTitle>
-            <Badge variant="outline" className="cursor-pointer hover:bg-slate-50">
-              This month
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {topDoctors.map((doctor, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center text-sm font-bold text-teal-700">
-                      #{i + 1}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{doctor.name}</p>
-                      <p className="text-xs text-slate-400">
-                        {doctor.specialty} · {doctor.consults} consults
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold">
-                      ₹{doctor.earnings.toLocaleString("en-IN")}
-                    </p>
-                    <p className="text-xs text-amber-500">
-                      ★ {doctor.rating}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+          <CardContent className="p-5 text-center">
+            <Clock className="w-6 h-6 mx-auto text-violet-400 mb-2" />
+            <p className="text-2xl font-extrabold">{analytics.avgConsultationDuration || 0} min</p>
+            <p className="text-xs text-slate-500">Avg Duration</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 text-center">
+            <CalendarCheck className="w-6 h-6 mx-auto text-teal-400 mb-2" />
+            <p className="text-2xl font-extrabold">{dash.activeSessions || 0}</p>
+            <p className="text-xs text-slate-500">Active Sessions</p>
           </CardContent>
         </Card>
       </div>

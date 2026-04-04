@@ -1,151 +1,170 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  Users,
-  Calendar,
-  CreditCard,
-  Check,
-  X,
-  Baby,
-  Crown,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Edit2, Save, X, Users, Calendar, CreditCard, Baby, Check, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { adminApi } from "@/lib/admin-api";
 
-const plans = [
-  {
-    id: "1", name: "Single Consult", type: "single", price: 399, consultations: 1,
-    maxMembers: 1, validityDays: 30, childDiscount: 10, isActive: true,
-    features: ["15-min HD video call", "Digital prescription", "Chat support"],
-    description: "One-time consultation with any available doctor",
-  },
-  {
-    id: "2", name: "Family Plan - 3 Members", type: "family", price: 1000, consultations: 3,
-    maxMembers: 3, validityDays: 90, childDiscount: 10, isActive: true,
-    features: ["3 consultations", "Up to 3 members", "10% child discount", "3 months validity"],
-    description: "Perfect for small families",
-  },
-  {
-    id: "3", name: "Family Plan - 5 Members", type: "family", price: 1500, consultations: 5,
-    maxMembers: 5, validityDays: 90, childDiscount: 10, isActive: true,
-    features: ["5 consultations", "Up to 5 members", "10% child discount", "Priority booking"],
-    description: "Best for larger families",
-  },
-  {
-    id: "4", name: "Yearly Card", type: "yearly", price: 5999, consultations: 10,
-    maxMembers: 5, validityDays: 365, childDiscount: 10, isActive: true,
-    features: ["10 consultations", "5 family members", "Free follow-ups", "Priority booking"],
-    description: "Annual health card for the whole family",
-  },
-];
-
-const typeColors: Record<string, string> = {
-  single: "default",
-  family: "success",
-  yearly: "warning",
-};
+const typeColors: Record<string, string> = { single: "default", family: "success", yearly: "warning" };
 
 export default function AdminPlansPage() {
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "", type: "single", price: "", consultations: "", maxMembers: "1",
+    validityDays: "30", childDiscountPercent: "10", description: "",
+  });
+
+  useEffect(() => { loadPlans(); }, []);
+
+  const loadPlans = async () => {
+    try { setPlans(await adminApi("/admin/plans")); } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const resetForm = () => {
+    setForm({ name: "", type: "single", price: "", consultations: "", maxMembers: "1", validityDays: "30", childDiscountPercent: "10", description: "" });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const startEdit = (plan: any) => {
+    setForm({
+      name: plan.name, type: plan.type, price: String(plan.price),
+      consultations: String(plan.consultations), maxMembers: String(plan.maxMembers),
+      validityDays: String(plan.validityDays), childDiscountPercent: String(plan.childDiscountPercent),
+      description: plan.description || "",
+    });
+    setEditingId(plan.id);
+    setShowForm(true);
+  };
+
+  const savePlan = async () => {
+    if (!form.name || !form.price || !form.consultations) return alert("Fill name, price, and consultations");
+    const body = {
+      name: form.name, type: form.type, price: Number(form.price),
+      consultations: Number(form.consultations), maxMembers: Number(form.maxMembers),
+      validityDays: Number(form.validityDays), childDiscountPercent: Number(form.childDiscountPercent),
+      description: form.description,
+    };
+    try {
+      if (editingId) {
+        await adminApi(`/admin/plans/${editingId}`, { method: "PATCH", body: JSON.stringify(body) });
+      } else {
+        await adminApi("/admin/plans", { method: "POST", body: JSON.stringify(body) });
+      }
+      resetForm();
+      loadPlans();
+    } catch (e: any) { alert(e.message); }
+  };
+
+  const toggleActive = async (id: string, isActive: boolean) => {
+    await adminApi(`/admin/plans/${id}`, { method: "PATCH", body: JSON.stringify({ isActive: !isActive }) });
+    loadPlans();
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Plan Management</h1>
-          <p className="text-slate-400 mt-1">Create and manage consultation plans</p>
+          <p className="text-slate-400 mt-1">{plans.length} plans</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4" />
-          Add Plan
+        <Button onClick={() => { resetForm(); setShowForm(true); }}>
+          <Plus className="w-4 h-4" /> Add Plan
         </Button>
       </div>
 
-      {/* Plan cards */}
-      <div className="grid lg:grid-cols-2 gap-5">
-        {plans.map((plan, i) => (
-          <motion.div
-            key={plan.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-          >
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+      {/* Add/Edit Form */}
+      {showForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingId ? "Edit Plan" : "Create New Plan"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Plan Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <select className="px-3 py-2 rounded-xl border text-sm" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                <option value="single">Single</option>
+                <option value="family">Family</option>
+                <option value="yearly">Yearly</option>
+              </select>
+              <Input placeholder="Price (₹)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              <Input placeholder="Consultations" type="number" value={form.consultations} onChange={(e) => setForm({ ...form, consultations: e.target.value })} />
+              <Input placeholder="Max Members" type="number" value={form.maxMembers} onChange={(e) => setForm({ ...form, maxMembers: e.target.value })} />
+              <Input placeholder="Validity (days)" type="number" value={form.validityDays} onChange={(e) => setForm({ ...form, validityDays: e.target.value })} />
+              <Input placeholder="Child Discount (%)" type="number" value={form.childDiscountPercent} onChange={(e) => setForm({ ...form, childDiscountPercent: e.target.value })} />
+              <Input placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={savePlan}><Save className="w-4 h-4" /> {editingId ? "Update Plan" : "Create Plan"}</Button>
+              <Button variant="outline" onClick={resetForm}><X className="w-4 h-4" /> Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Plans list */}
+      {loading ? <p className="text-slate-400">Loading...</p> : (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {plans.map((plan) => (
+            <Card key={plan.id} className={!plan.isActive ? "opacity-50" : ""}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-bold">{plan.name}</h3>
+                      <span className="font-bold text-lg">{plan.name}</span>
                       <Badge variant={typeColors[plan.type] as any}>{plan.type}</Badge>
-                      {plan.isActive ? (
-                        <Badge variant="success">Active</Badge>
-                      ) : (
-                        <Badge variant="destructive">Inactive</Badge>
-                      )}
+                      <Badge variant={plan.isActive ? "success" : "destructive"}>
+                        {plan.isActive ? "Active" : "Inactive"}
+                      </Badge>
                     </div>
-                    <p className="text-sm text-slate-400 mt-1">{plan.description}</p>
+                    <p className="text-sm text-slate-400 mt-1">{plan.description || "No description"}</p>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setEditingId(plan.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => startEdit(plan)}>
                       <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => toggleActive(plan.id, plan.isActive)}>
+                      {plan.isActive ? <X className="w-4 h-4 text-red-400" /> : <Check className="w-4 h-4 text-green-400" />}
                     </Button>
                   </div>
                 </div>
-
-                {/* Stats grid */}
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="bg-slate-50 rounded-xl p-3 text-center">
-                    <CreditCard className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                    <p className="text-lg font-bold">₹{plan.price}</p>
-                    <p className="text-[10px] text-slate-400">Price</p>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <CreditCard className="w-4 h-4 mx-auto text-slate-400 mb-1" />
+                    <p className="font-bold">₹{plan.price}</p>
+                    <p className="text-[10px] text-slate-500">Price</p>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-3 text-center">
-                    <Calendar className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                    <p className="text-lg font-bold">{plan.consultations}</p>
-                    <p className="text-[10px] text-slate-400">Consults</p>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <Calendar className="w-4 h-4 mx-auto text-slate-400 mb-1" />
+                    <p className="font-bold">{plan.consultations}</p>
+                    <p className="text-[10px] text-slate-500">Consults</p>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-3 text-center">
-                    <Users className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                    <p className="text-lg font-bold">{plan.maxMembers}</p>
-                    <p className="text-[10px] text-slate-400">Members</p>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <Users className="w-4 h-4 mx-auto text-slate-400 mb-1" />
+                    <p className="font-bold">{plan.maxMembers}</p>
+                    <p className="text-[10px] text-slate-500">Members</p>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-3 text-center">
-                    <Baby className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                    <p className="text-lg font-bold">{plan.childDiscount}%</p>
-                    <p className="text-[10px] text-slate-400">Child Off</p>
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <Baby className="w-4 h-4 mx-auto text-slate-400 mb-1" />
+                    <p className="font-bold">{plan.childDiscountPercent}%</p>
+                    <p className="text-[10px] text-slate-500">Child Off</p>
                   </div>
                 </div>
-
-                {/* Validity */}
-                <div className="flex items-center justify-between p-3 bg-teal-50 rounded-xl mb-3">
-                  <span className="text-sm text-teal-700 font-medium">Validity</span>
-                  <span className="text-sm font-bold text-teal-800">
-                    {plan.validityDays >= 365 ? `${Math.floor(plan.validityDays / 365)} year` : `${Math.floor(plan.validityDays / 30)} months`}
-                  </span>
-                </div>
-
-                {/* Features */}
-                <div className="space-y-1">
-                  {plan.features.map((f) => (
-                    <div key={f} className="flex items-center gap-2 text-sm text-slate-500">
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                      {f}
-                    </div>
-                  ))}
+                <div className="mt-3 p-2 bg-white/5 rounded-lg text-xs text-slate-400 text-center">
+                  Validity: {plan.validityDays >= 365 ? `${Math.floor(plan.validityDays / 365)} year` : `${Math.floor(plan.validityDays / 30)} months`}
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
