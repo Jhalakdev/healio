@@ -186,7 +186,8 @@ async function main() {
   ];
 
   for (const plan of plans) {
-    await prisma.plan.create({ data: plan });
+    const existing = await prisma.plan.findFirst({ where: { name: plan.name } });
+    if (!existing) await prisma.plan.create({ data: plan });
   }
   console.log('✅ Plans created (₹399 single, ₹1000 family-3, ₹1500 family-5, ₹5999 yearly)');
 
