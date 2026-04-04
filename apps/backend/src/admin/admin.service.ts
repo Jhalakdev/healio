@@ -135,25 +135,32 @@ export class AdminService {
   }
 
   // ─── BOOKING MANAGEMENT ─────────────────────────
-  async listBookings(status?: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    const where = status ? { status: status as any } : undefined;
+  async listBookings(status?: string, page: any = 1, limit: any = 20) {
+    try {
+      const p = Number(page) || 1;
+      const l = Number(limit) || 20;
+      const skip = (p - 1) * l;
+      const where = status ? { status: status as any } : undefined;
 
-    const [bookings, total] = await Promise.all([
-      this.prisma.booking.findMany({
-        where,
-        include: {
-          patient: { select: { name: true } },
-          doctor: { select: { name: true, specialization: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.booking.count({ where }),
-    ]);
+      const [bookings, total] = await Promise.all([
+        this.prisma.booking.findMany({
+          where,
+          include: {
+            patient: { select: { name: true } },
+            doctor: { select: { name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: l,
+        }),
+        this.prisma.booking.count({ where }),
+      ]);
 
-    return { data: bookings, meta: { total, page, limit } };
+      return { data: bookings, meta: { total, page: p, limit: l } };
+    } catch (e) {
+      console.error('listBookings error:', e);
+      throw e;
+    }
   }
 
   async cancelBooking(bookingId: string, reason: string) {

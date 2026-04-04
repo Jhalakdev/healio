@@ -1,8 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Save, Eye, EyeOff, Link as LinkIcon } from "lucide-react";
+import {
+  Plus, Save, Eye, EyeOff, Link as LinkIcon,
+  HeadphonesIcon, Droplets, Wind, Thermometer, Stethoscope,
+  CircleDot, Bone, EyeIcon, Ear, Brain, Heart, Frown, Baby, Activity,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const symptomIconMap: Record<string, { icon: any; color: string }> = {
+  "Headache": { icon: HeadphonesIcon, color: "#ef4444" },
+  "Irregular Periods": { icon: Droplets, color: "#ec4899" },
+  "Breathing Problem": { icon: Wind, color: "#3b82f6" },
+  "Cough & Cold": { icon: Thermometer, color: "#f59e0b" },
+  "Digestion Issues": { icon: Stethoscope, color: "#10b981" },
+  "Skin Rash": { icon: CircleDot, color: "#f97316" },
+  "Back Pain": { icon: Bone, color: "#8b5cf6" },
+  "Eye Problem": { icon: EyeIcon, color: "#06b6d4" },
+  "Ear Pain": { icon: Ear, color: "#d97706" },
+  "Fever": { icon: Thermometer, color: "#ef4444" },
+  "Chest Pain": { icon: Heart, color: "#dc2626" },
+  "Anxiety & Stress": { icon: Brain, color: "#7c3aed" },
+  "Joint Pain": { icon: Activity, color: "#f59e0b" },
+  "Child Health": { icon: Baby, color: "#ec4899" },
+};
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -117,13 +138,22 @@ export default function AdminSymptomsPage() {
           <Card key={sym.id} className={!sym.isActive ? "opacity-50" : ""}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-2xl border border-white/10">
-                  {sym.imageUrl ? (
-                    <img src={sym.imageUrl} alt={sym.name} className="w-8 h-8 rounded" />
-                  ) : (
-                    sym.icon || "🏥"
-                  )}
-                </div>
+                {(() => {
+                  const mapped = symptomIconMap[sym.name];
+                  if (mapped) {
+                    const Icon = mapped.icon;
+                    return (
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: mapped.color + "15" }}>
+                        <Icon className="w-6 h-6" style={{ color: mapped.color }} />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-2xl border border-white/10">
+                      {sym.icon || "🏥"}
+                    </div>
+                  );
+                })()}
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-sm">{sym.name}</h4>
