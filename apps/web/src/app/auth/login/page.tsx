@@ -117,7 +117,7 @@ export default function LoginPage() {
             ].map((t) => (
               <button
                 key={t.key}
-                onClick={() => { setTab(t.key); setError(""); }}
+                onClick={() => { setTab(t.key); setError(""); setEmail(""); setPassword(""); }}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   tab === t.key
                     ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-500/25"
@@ -209,9 +209,30 @@ export default function LoginPage() {
             </Card>
           )}
 
-          <p className="text-center text-xs text-slate-400 mt-6">
-            {tab === "admin" ? "Admin: admin@healio.in / admin123" : "Doctor: doctor@healio.in / doctor123"}
-          </p>
+          {/* Quick fill buttons (dev only) */}
+          <div className="mt-6 space-y-2">
+            <p className="text-center text-[10px] text-slate-500 uppercase">Quick Login (Dev)</p>
+            {tab === "admin" ? (
+              <button onClick={() => { setEmail("admin@healio.in"); setPassword("admin123"); }}
+                className="w-full text-left px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
+                <span className="font-bold text-slate-700">Admin</span>
+                <span className="text-slate-400 ml-2">admin@healio.in / admin123</span>
+              </button>
+            ) : (
+              <>
+                <button onClick={() => { setEmail("doctor@healio.in"); setPassword("doctor123"); }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors text-sm">
+                  <span className="font-bold text-emerald-700">Approved Doctor</span>
+                  <span className="text-emerald-500 ml-2">doctor@healio.in</span>
+                </button>
+                <button onClick={() => { setEmail("newdoctor@healio.in"); setPassword("test123"); }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors text-sm">
+                  <span className="font-bold text-amber-700">New Doctor (Not Approved)</span>
+                  <span className="text-amber-500 ml-2">newdoctor@healio.in</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
