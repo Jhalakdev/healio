@@ -150,10 +150,15 @@ export default function DoctorDashboardHome() {
     reader.readAsDataURL(file);
   };
 
-  const applyCrop = () => {
+  const applyCrop = async () => {
     setPhotoSrc(rawImg);
     setCropOpen(false);
-    // TODO: upload cropped image to API
+    // Upload photo as base64 avatar URL
+    if (rawImg) {
+      try {
+        await adminApi("/doctors/me", { method: "PATCH", body: JSON.stringify({ avatarUrl: rawImg }) });
+      } catch {}
+    }
   };
 
   const isApproved = profile?.verificationStatus === "APPROVED";
