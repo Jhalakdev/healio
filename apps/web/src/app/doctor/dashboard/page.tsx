@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Cropper from "react-easy-crop";
 import {
-  Calendar, IndianRupee, Bell, CheckCircle, Clock, Stethoscope, Video,
+  Calendar, IndianRupee, Bell, CheckCircle, Clock, Stethoscope, Video, Settings,
   FileText, ArrowRight, ArrowLeft, User, Upload, AlertTriangle, Camera, X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
