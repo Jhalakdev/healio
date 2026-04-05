@@ -28,6 +28,9 @@ export default function AdminLabTestsPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [showAddTest, setShowAddTest] = useState(false);
   const [testForm, setTestForm] = useState({ name: "", category: "", mrp: "", sellingPrice: "", costPrice: "", turnaround: "", fasting: false, providerId: "" });
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [showAddProvider, setShowAddProvider] = useState(false);
+  const [providerForm, setProviderForm] = useState({ name: "", contactEmail: "", contactPhone: "", apiEndpoint: "" });
 
   useEffect(() => {
     adminApi("/lab-tests/admin/dashboard").then(setDash).catch(() => {});
@@ -49,19 +52,44 @@ export default function AdminLabTestsPage() {
   };
 
   const addTest = async () => {
-    if (!testForm.name || !testForm.category || !testForm.providerId) return alert("Fill required fields");
-    await adminApi("/lab-tests/admin/tests", {
-      method: "POST",
-      body: JSON.stringify({
-        ...testForm,
-        mrp: Number(testForm.mrp),
-        sellingPrice: Number(testForm.sellingPrice),
-        costPrice: Number(testForm.costPrice),
-      }),
-    });
-    setShowAddTest(false);
+    if (!testForm.name || !testForm.category) return alert("Fill required fields");
+    const payload = {
+      ...testForm,
+      mrp: Number(testForm.mrp) || 0,
+      sellingPrice: Number(testForm.sellingPrice) || 0,
+      costPrice: Number(testForm.costPrice) || 0,
+      providerId: testForm.providerId || undefined,
+    };
+    if (editingTestId) {
+      await adminApi(`/lab-tests/admin/tests/${editingTestId}`, { method: "PATCH", body: JSON.stringify(payload) });
+    } else {
+      await adminApi("/lab-tests/admin/tests", { method: "POST", body: JSON.stringify(payload) });
+    }
+    setShowAddTest(false); setEditingTestId(null);
     setTestForm({ name: "", category: "", mrp: "", sellingPrice: "", costPrice: "", turnaround: "", fasting: false, providerId: "" });
     setTests(await adminApi("/lab-tests/tests"));
+  };
+
+  const editTest = (t: any) => {
+    setEditingTestId(t.id);
+    setTestForm({
+      name: t.name, category: t.category, mrp: String(t.mrp), sellingPrice: String(t.sellingPrice),
+      costPrice: String(t.costPrice), turnaround: t.turnaround || "", fasting: t.fasting || false, providerId: t.providerId || "",
+    });
+    setShowAddTest(true);
+  };
+
+  const addProvider = async () => {
+    if (!providerForm.name) return alert("Provider name required");
+    await adminApi("/lab-tests/admin/providers", { method: "POST", body: JSON.stringify(providerForm) });
+    setShowAddProvider(false);
+    setProviderForm({ name: "", contactEmail: "", contactPhone: "", apiEndpoint: "" });
+    setProviders(await adminApi("/lab-tests/admin/providers"));
+  };
+
+  const toggleProvider = async (id: string, isActive: boolean) => {
+    await adminApi(`/lab-tests/admin/providers/${id}`, { method: "PATCH", body: JSON.stringify({ isActive: !isActive }) });
+    setProviders(await adminApi("/lab-tests/admin/providers"));
   };
 
   return (
@@ -266,6 +294,7 @@ export default function AdminLabTestsPage() {
                     <p className="text-xs text-slate-500 line-through">₹{t.mrp}</p>
                     <p className="text-sm font-bold text-emerald-400">₹{t.sellingPrice}</p>
                     <p className="text-[10px] text-slate-600">Cost: ₹{t.costPrice} · Profit: ₹{Number(t.sellingPrice) - Number(t.costPrice)}</p>
+                    <Button size="sm" variant="ghost" className="mt-1" onClick={() => editTest(t)}><Edit2 className="w-3 h-3" /></Button>
                   </div>
                 </div>
               ))}
@@ -277,6 +306,26 @@ export default function AdminLabTestsPage() {
       {/* ── PROVIDERS ── */}
       {tab === "providers" && (
         <div className="space-y-4">
+          <div className="flex justify-between">
+            <p className="text-slate-400">{providers.length} provider(s)</p>
+            <Button onClick={() => setShowAddProvider(!showAddProvider)}><Plus className="w-4 h-4" /> Add Provider</Button>
+          </div>
+
+          {showAddProvider && (
+            <Card>
+              <CardHeader><CardTitle>Add Lab Provider</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Provider Name *" value={providerForm.name} onChange={(e) => setProviderForm({...providerForm, name: e.target.value})} />
+                  <Input placeholder="Contact Email" value={providerForm.contactEmail} onChange={(e) => setProviderForm({...providerForm, contactEmail: e.target.value})} />
+                  <Input placeholder="Contact Phone" value={providerForm.contactPhone} onChange={(e) => setProviderForm({...providerForm, contactPhone: e.target.value})} />
+                  <Input placeholder="API Endpoint (optional)" value={providerForm.apiEndpoint} onChange={(e) => setProviderForm({...providerForm, apiEndpoint: e.target.value})} />
+                </div>
+                <Button onClick={addProvider}><Save className="w-4 h-4" /> Save Provider</Button>
+              </CardContent>
+            </Card>
+          )}
+
           {providers.map((p: any) => (
             <Card key={p.id}>
               <CardContent className="p-4 flex items-center gap-4">
@@ -285,13 +334,19 @@ export default function AdminLabTestsPage() {
                 </div>
                 <div className="flex-1">
                   <p className="font-bold">{p.name}</p>
-                  <p className="text-xs text-slate-500">{p._count?.tests || 0} tests · {p._count?.orders || 0} orders</p>
+                  <p className="text-xs text-slate-500">
+                    {p._count?.tests || 0} tests · {p._count?.orders || 0} orders
+                    {p.contactEmail && ` · ${p.contactEmail}`}
+                  </p>
                 </div>
                 <Badge variant={p.isActive ? "success" : "destructive"}>{p.isActive ? "Active" : "Inactive"}</Badge>
+                <Button size="sm" variant="outline" onClick={() => toggleProvider(p.id, p.isActive)}>
+                  {p.isActive ? "Deactivate" : "Activate"}
+                </Button>
               </CardContent>
             </Card>
           ))}
-          {providers.length === 0 && <p className="text-slate-400">No providers yet.</p>}
+          {providers.length === 0 && <p className="text-slate-400">No providers yet. Add one to start managing lab tests.</p>}
         </div>
       )}
     </div>

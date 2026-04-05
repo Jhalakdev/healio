@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ShieldCheck, Save, Trash2, Eye, Edit2, Ban } from "lucide-react";
+import { Plus, ShieldCheck, Save, Trash2, Eye, Edit2, Ban, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,8 +55,18 @@ export default function AdminRolesPage() {
     setPermissions(p);
   };
 
+  const toggleAdminStatus = async (userId: string, isActive: boolean) => {
+    if (!confirm(isActive ? "Deactivate this admin?" : "Activate this admin?")) return;
+    try {
+      await adminApi(`/admin/users/${userId}/${isActive ? "deactivate" : "activate"}`, { method: "POST" });
+      loadAdmins();
+    } catch (e: any) { alert(e.message || "Failed"); }
+  };
+
   const createAdmin = async () => {
     if (!newEmail || !newPassword) return alert("Fill email and password");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return alert("Enter a valid email address");
+    if (newPassword.length < 6) return alert("Password must be at least 6 characters");
     const mods = Object.entries(permissions).map(([module, perms]) => ({
       module,
       canRead: perms.read,
@@ -121,9 +131,14 @@ export default function AdminRolesPage() {
                 {admin.isActive ? "Active" : "Blocked"}
               </Badge>
               {admin.role !== "SUPER_ADMIN" && (
-                <Button size="sm" variant="outline" onClick={() => loadPermissions(admin.id)}>
-                  <ShieldCheck className="w-3 h-3" /> Permissions
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => loadPermissions(admin.id)}>
+                    <ShieldCheck className="w-3 h-3" /> Permissions
+                  </Button>
+                  <Button size="sm" variant={admin.isActive ? "destructive" : "default"} onClick={() => toggleAdminStatus(admin.id, admin.isActive)}>
+                    {admin.isActive ? <><Ban className="w-3 h-3" /> Deactivate</> : <><CheckCircle className="w-3 h-3" /> Activate</>}
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>

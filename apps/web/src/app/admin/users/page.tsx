@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import {
   Users, Ban, CheckCircle, ChevronDown, ChevronUp, Phone, Mail,
-  Calendar, Wallet, MessageSquare, FileText, Star, X, Trash2,
+  Calendar, Wallet, MessageSquare, FileText, Star, X, Trash2, Edit2, Save,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,8 @@ export default function AdminUsersPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
   const [chatData, setChatData] = useState<any>(null);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ name: "", dob: "", gender: "", height: "", weight: "", bloodGroup: "" });
 
   useEffect(() => { loadPatients(); }, []);
 
@@ -53,6 +56,31 @@ export default function AdminUsersPage() {
     if (!confirm("Delete this family member?")) return;
     await adminApi(`/admin/family-members/${id}`, { method: "DELETE" });
     if (expandedId) { setDetailLoading(true); setDetail(await adminApi(`/admin/patients/${expandedId}`)); setDetailLoading(false); }
+  };
+
+  const startEditPatient = (p: any) => {
+    setEditingPatient(p.id);
+    setEditForm({
+      name: p.name || "", dob: p.dob ? new Date(p.dob).toISOString().split("T")[0] : "",
+      gender: p.gender || "", height: p.height || "", weight: p.weight || "", bloodGroup: p.bloodGroup || "",
+    });
+  };
+
+  const savePatient = async () => {
+    if (!editingPatient) return;
+    try {
+      await adminApi(`/admin/patients/${editingPatient}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: editForm.name || undefined, dob: editForm.dob || undefined,
+          gender: editForm.gender || undefined, height: editForm.height || undefined,
+          weight: editForm.weight || undefined, bloodGroup: editForm.bloodGroup || undefined,
+        }),
+      });
+      setEditingPatient(null);
+      if (expandedId) { setDetail(await adminApi(`/admin/patients/${expandedId}`)); }
+      loadPatients();
+    } catch (e: any) { alert(e.message || "Failed"); }
   };
 
   const refund = async (bookingId: string) => {
@@ -138,7 +166,35 @@ export default function AdminUsersPage() {
                       <>
                         {/* Personal */}
                         <div>
-                          <h4 className="text-xs font-semibold text-slate-400 uppercase mb-3">Personal Information</h4>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-xs font-semibold text-slate-400 uppercase">Personal Information</h4>
+                            {editingPatient === detail.id ? (
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={savePatient}><Save className="w-3 h-3" /> Save</Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingPatient(null)}>Cancel</Button>
+                              </div>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={() => startEditPatient(detail)}><Edit2 className="w-3 h-3" /> Edit</Button>
+                            )}
+                          </div>
+                          {editingPatient === detail.id ? (
+                            <div className="grid grid-cols-4 gap-3">
+                              <div className="p-3 rounded-xl bg-white/5"><label className="text-[10px] text-slate-500 uppercase block mb-1">Name</label><Input value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} /></div>
+                              <div className="p-3 rounded-xl bg-white/5"><label className="text-[10px] text-slate-500 uppercase block mb-1">DOB</label><Input type="date" value={editForm.dob} onChange={(e) => setEditForm({...editForm, dob: e.target.value})} /></div>
+                              <div className="p-3 rounded-xl bg-white/5"><label className="text-[10px] text-slate-500 uppercase block mb-1">Gender</label>
+                                <select className="w-full px-2 py-1 rounded-lg border bg-transparent text-sm" value={editForm.gender} onChange={(e) => setEditForm({...editForm, gender: e.target.value})}>
+                                  <option value="">N/A</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option>
+                                </select>
+                              </div>
+                              <div className="p-3 rounded-xl bg-white/5"><label className="text-[10px] text-slate-500 uppercase block mb-1">Blood Group</label>
+                                <select className="w-full px-2 py-1 rounded-lg border bg-transparent text-sm" value={editForm.bloodGroup} onChange={(e) => setEditForm({...editForm, bloodGroup: e.target.value})}>
+                                  <option value="">N/A</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+                                </select>
+                              </div>
+                              <div className="p-3 rounded-xl bg-white/5"><label className="text-[10px] text-slate-500 uppercase block mb-1">Height</label><Input value={editForm.height} onChange={(e) => setEditForm({...editForm, height: e.target.value})} placeholder="5'8&quot;" /></div>
+                              <div className="p-3 rounded-xl bg-white/5"><label className="text-[10px] text-slate-500 uppercase block mb-1">Weight</label><Input value={editForm.weight} onChange={(e) => setEditForm({...editForm, weight: e.target.value})} placeholder="70 kg" /></div>
+                            </div>
+                          ) : (
                           <div className="grid grid-cols-4 gap-3">
                             {[
                               { l: "Name", v: detail.name || "Not set" },
@@ -156,6 +212,7 @@ export default function AdminUsersPage() {
                               </div>
                             ))}
                           </div>
+                          )}
                         </div>
 
                         {/* Wallet + Transactions */}
