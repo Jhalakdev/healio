@@ -103,6 +103,16 @@ export class DoctorsController {
     return this.doctorsService.getDashboard(user.userId);
   }
 
+  @Get('me/slots')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my availability slots' })
+  async getMySlots(@CurrentUser() user: CurrentUserData) {
+    const doctor = await this.doctorsService.getDoctorByUserId(user.userId);
+    return this.doctorsService.getDoctorSlots(doctor.id);
+  }
+
   @Post('me/slots')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.DOCTOR)

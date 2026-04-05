@@ -171,6 +171,13 @@ export class DoctorsService {
     };
   }
 
+  async getDoctorSlots(doctorId: string) {
+    return this.prisma.doctorSlot.findMany({
+      where: { doctorId },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    });
+  }
+
   async manageSlots(
     userId: string,
     slots: { dayOfWeek: number; startTime: string; endTime: string; isBreak?: boolean }[],
