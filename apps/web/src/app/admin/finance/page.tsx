@@ -18,7 +18,7 @@ export default function AdminFinancePage() {
 
   useEffect(() => {
     adminApi("/admin/dashboard").then(setDashboard).catch(console.error);
-    adminApi("/admin/payouts").then((d) => setPayouts(Array.isArray(d) ? d?.data || d : [])).catch(() => {});
+    adminApi("/admin/payouts").then((d: any) => setPayouts(Array.isArray(d) ? d : d?.data || [])).catch(() => {});
     adminApi("/admin/transactions").then(setTransactions).catch(() => {});
     adminApi("/admin/commission").then((d) => {
       setCommission(d.commissionPercent);
