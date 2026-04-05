@@ -16,7 +16,7 @@ export async function adminApi<T = any>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const res = await fetch(`${API}${endpoint}`, { ...options, headers });
+  const res = await fetch(`${API}/api${endpoint}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: "Request failed" }));
     throw new Error(err.message || `HTTP ${res.status}`);
