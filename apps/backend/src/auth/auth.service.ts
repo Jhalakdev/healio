@@ -33,16 +33,16 @@ export class AuthService {
 
   async sendOtp(phone: string): Promise<{ message: string }> {
     const otpTtl = this.config.get<number>('OTP_EXPIRY_SECONDS', 300);
-    const isDev = this.config.get<string>('NODE_ENV') === 'development';
+    const smsConfigured = this.config.get<string>('SMS_PROVIDER');
 
-    // In dev, OTP is always 123456
-    const otp = isDev
-      ? '123456'
-      : Math.floor(100000 + Math.random() * 900000).toString();
+    // Use fixed OTP until SMS provider is configured
+    const otp = smsConfigured
+      ? Math.floor(100000 + Math.random() * 900000).toString()
+      : '123456';
 
     await this.redis.setOtp(phone, otp, otpTtl);
 
-    if (!isDev) {
+    if (smsConfigured) {
       // TODO: integrate SMS provider (Twilio, MSG91, etc.)
       console.log(`[SMS] OTP for ${phone}: ${otp}`);
     }

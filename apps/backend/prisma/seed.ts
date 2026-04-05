@@ -9,10 +9,10 @@ async function main() {
   // Create Admin
   const adminPassword = await bcrypt.hash('admin123', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@healio.in' },
+    where: { email: 'admin@blinkcure.com' },
     update: {},
     create: {
-      email: 'admin@healio.in',
+      email: 'admin@blinkcure.com',
       password: adminPassword,
       role: Role.ADMIN,
       isActive: true,
@@ -23,10 +23,10 @@ async function main() {
   // Create Demo Doctor
   const doctorPassword = await bcrypt.hash('doctor123', 12);
   const doctorUser = await prisma.user.upsert({
-    where: { email: 'doctor@healio.in' },
+    where: { email: 'doctor@blinkcure.com' },
     update: {},
     create: {
-      email: 'doctor@healio.in',
+      email: 'doctor@blinkcure.com',
       password: doctorPassword,
       role: Role.DOCTOR,
       isActive: true,
@@ -106,10 +106,10 @@ async function main() {
   // Create a second doctor
   const doctor2Password = await bcrypt.hash('doctor123', 12);
   const doctor2User = await prisma.user.upsert({
-    where: { email: 'derma@healio.in' },
+    where: { email: 'derma@blinkcure.com' },
     update: {},
     create: {
-      email: 'derma@healio.in',
+      email: 'derma@blinkcure.com',
       password: doctor2Password,
       role: Role.DOCTOR,
       isActive: true,
