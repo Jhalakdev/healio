@@ -2,33 +2,41 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
-const MAX_WALLET_BALANCE = 25000; // ₹25,000 max
+const DEFAULT_MAX_WALLET = 25000;
 
 @Injectable()
 export class WalletService {
   constructor(private prisma: PrismaService) {}
+
+  private async getMaxBalance(): Promise<number> {
+    const config = await this.prisma.appConfig.findUnique({ where: { key: 'max_wallet_balance' } });
+    return config?.value ? Number(config.value) : DEFAULT_MAX_WALLET;
+  }
 
   async getWallet(userId: string) {
     const wallet = await this.prisma.wallet.findUnique({
       where: { userId },
     });
     if (!wallet) throw new NotFoundException('Wallet not found');
-    return { ...wallet, maxBalance: MAX_WALLET_BALANCE };
+    const maxBalance = await this.getMaxBalance();
+    return { ...wallet, maxBalance };
   }
 
   async addMoney(userId: string, amount: number) {
     if (amount <= 0) throw new BadRequestException('Amount must be positive');
-    if (amount > MAX_WALLET_BALANCE) {
-      throw new BadRequestException(`Maximum single top-up is ₹${MAX_WALLET_BALANCE}`);
+    const maxBalance = await this.getMaxBalance();
+
+    if (amount > maxBalance) {
+      throw new BadRequestException(`Maximum single top-up is ₹${maxBalance}`);
     }
 
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     const currentBalance = wallet ? Number(wallet.balance) : 0;
 
-    if (currentBalance + amount > MAX_WALLET_BALANCE) {
-      const canAdd = MAX_WALLET_BALANCE - currentBalance;
+    if (currentBalance + amount > maxBalance) {
+      const canAdd = maxBalance - currentBalance;
       throw new BadRequestException(
-        `Wallet limit is ₹${MAX_WALLET_BALANCE.toLocaleString('en-IN')}. You can add up to ₹${canAdd.toLocaleString('en-IN')} more.`,
+        `Wallet limit is ₹${maxBalance.toLocaleString('en-IN')}. You can add up to ₹${canAdd.toLocaleString('en-IN')} more.`,
       );
     }
 
@@ -50,7 +58,7 @@ export class WalletService {
         },
       });
 
-      return { ...updated, maxBalance: MAX_WALLET_BALANCE };
+      return { ...updated, maxBalance };
     });
   }
 
