@@ -38,6 +38,7 @@ export default function BookingConfirmScreen() {
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null); // null = self
   const [symptoms, setSymptoms] = useState('');
+  const [configDuration, setConfigDuration] = useState(15);
   const slideX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function BookingConfirmScreen() {
       api(`/doctors/${doctorId}`).then(setDoctor).catch(() => null),
       api('/wallet').then(setWallet).catch(() => null),
       api('/users/me').then(setProfile).catch(() => null),
+      api('/config/default_consultation_duration_minutes').then((d: any) => { if (d?.value) setConfigDuration(Number(d.value)); }).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [doctorId]);
 
@@ -146,7 +148,7 @@ export default function BookingConfirmScreen() {
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
   if (!doctor) return <View style={styles.loadingWrap}><Text style={{ color: colors.gray400 }}>Doctor not found</Text></View>;
 
-  const durationMin = 15; // TODO: fetch from backend config
+  const durationMin = configDuration;
   const dateObj = new Date(scheduledAt);
   const dateStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

@@ -25,6 +25,14 @@ export class PublicContentController {
     return this.prisma.cmsPage.findUnique({ where: { slug } });
   }
 
+  @Get('config/:key')
+  @ApiOperation({ summary: 'Get public app config value' })
+  async getConfig(@Param('key') key: string) {
+    const allowed = ['default_consultation_duration_minutes', 'max_wallet_balance', 'platform_commission_percent'];
+    if (!allowed.includes(key)) return null;
+    return this.prisma.appConfig.findUnique({ where: { key } });
+  }
+
   @Get('banners')
   @ApiOperation({ summary: 'Get active banners for app' })
   async getBanners(@Query('target') target?: string) {
