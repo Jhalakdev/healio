@@ -380,79 +380,117 @@ export default function DoctorDashboardHome() {
   }
 
   // ═══════════════════════════════════════════════════
-  // APPROVED DASHBOARD
+  // APPROVED DASHBOARD — Premium
   // ═══════════════════════════════════════════════════
+  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening";
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Welcome, {profile?.name}</h1>
-          <p className="text-slate-400 mt-1">Your practice overview for today</p>
+    <div className="space-y-8">
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0c1829] to-[#0a1020] border border-white/[0.06] p-8">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-teal-500/[0.07] to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-500/[0.05] to-transparent rounded-full translate-y-1/2 -translate-x-1/3" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-500 font-medium">{greeting}</p>
+            <h1 className="text-3xl font-extrabold tracking-tight mt-1">{profile?.name}</h1>
+            <p className="text-slate-400 mt-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {dashboard?.isOnline ? "Online" : "Offline"}
+              </span>
+              <span className="text-slate-600">·</span>
+              <span className="text-sm">{profile?.specialization || "General Medicine"}</span>
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" className="rounded-xl border-white/10 hover:border-white/20" onClick={() => router.push("/doctor/notifications")}>
+              <Bell className="w-4 h-4" />
+              {notifications.unreadCount > 0 && <span className="ml-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">{notifications.unreadCount}</span>}
+            </Button>
+            <Button className="rounded-xl" onClick={() => router.push("/doctor/settings")}>
+              <Calendar className="w-4 h-4" /> Manage Schedule
+            </Button>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => router.push("/doctor/notifications")}>
-          <Bell className="w-4 h-4" />
-          {notifications.unreadCount > 0 && <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{notifications.unreadCount}</span>}
-        </Button>
       </div>
 
-      <Card className="border-blue-500/20 bg-blue-500/5">
-        <CardContent className="p-4 flex items-center gap-3">
-          <Video className="w-5 h-5 text-blue-400 shrink-0" />
-          <p className="text-sm text-slate-300"><strong className="text-blue-300">Video calls are on the mobile app.</strong> Use same credentials on the BlinkCure app to accept calls.</p>
-        </CardContent>
-      </Card>
-
+      {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Today's Bookings", value: dashboard?.todayBookings ?? 0, icon: Calendar, color: "from-blue-500 to-cyan-600" },
-          { label: "Total Earnings", value: `₹${Number(dashboard?.totalEarnings || 0).toLocaleString("en-IN")}`, icon: IndianRupee, color: "from-emerald-500 to-green-600" },
-          { label: "Status", value: dashboard?.isOnline ? "Online" : "Offline", icon: Stethoscope, color: dashboard?.isOnline ? "from-emerald-500 to-green-600" : "from-slate-500 to-slate-600" },
-          { label: "Notifications", value: notifications.unreadCount ?? 0, icon: Bell, color: "from-orange-500 to-amber-600" },
+          { label: "Today's Patients", value: dashboard?.todayBookings ?? 0, icon: Calendar, gradient: "from-blue-500 to-cyan-500", glow: "shadow-blue-500/20" },
+          { label: "Total Earnings", value: `₹${Number(dashboard?.totalEarnings || 0).toLocaleString("en-IN")}`, icon: IndianRupee, gradient: "from-emerald-500 to-green-500", glow: "shadow-emerald-500/20" },
+          { label: "Total Patients", value: dashboard?.totalPatients ?? 0, icon: Stethoscope, gradient: "from-violet-500 to-purple-500", glow: "shadow-violet-500/20" },
+          { label: "Unread", value: notifications.unreadCount ?? 0, icon: Bell, gradient: "from-amber-500 to-orange-500", glow: "shadow-amber-500/20" },
         ].map((s) => (
-          <Card key={s.label}><CardContent className="p-5">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3`}><s.icon className="w-5 h-5 text-white" /></div>
-            <p className="text-2xl font-extrabold">{s.value}</p><p className="text-xs text-slate-500 mt-1">{s.label}</p>
-          </CardContent></Card>
+          <div key={s.label} className="group relative rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.06] p-5 hover:border-white/[0.1] transition-all">
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center mb-4 shadow-lg ${s.glow}`}>
+              <s.icon className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-3xl font-extrabold tracking-tight">{s.value}</p>
+            <p className="text-[11px] text-slate-500 mt-1 font-medium uppercase tracking-wider">{s.label}</p>
+          </div>
         ))}
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">Today&apos;s Consultations</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => router.push("/doctor/bookings")}>View All</Button>
-        </CardHeader>
-        <CardContent>
+      {/* Today's schedule */}
+      <div className="rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.06] overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-white/[0.04]">
+          <div>
+            <h2 className="text-lg font-bold">Today&apos;s Schedule</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+          </div>
+          <Button size="sm" variant="outline" className="rounded-xl border-white/10" onClick={() => router.push("/doctor/bookings")}>View All Bookings</Button>
+        </div>
+        <div className="p-6">
           {todayBookings.length > 0 ? (
-            <div className="space-y-3">{todayBookings.map((b: any) => (
-              <div key={b.id} className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 font-bold text-sm">{b.patientName?.[0] || "P"}</div>
-                  <div><p className="font-bold">{b.patientName}</p><p className="text-xs text-slate-500">{new Date(b.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {b.durationMin}min</p></div>
+            <div className="space-y-3">
+              {todayBookings.map((b: any, i: number) => (
+                <div key={b.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-all group">
+                  <div className="text-center w-14">
+                    <p className="text-lg font-extrabold text-teal-400">{new Date(b.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}</p>
+                    <p className="text-[9px] text-slate-600 uppercase">{b.durationMin}min</p>
+                  </div>
+                  <div className="w-px h-10 bg-gradient-to-b from-teal-500/50 to-transparent" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400/20 to-emerald-500/10 flex items-center justify-center text-teal-300 font-bold text-sm">
+                    {b.patientName?.[0] || "P"}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">{b.patientName}</p>
+                    {b.symptoms && <p className="text-[11px] text-slate-500 mt-0.5">{b.symptoms}</p>}
+                  </div>
+                  <Badge variant={statusColor[b.status] as any} className="rounded-lg">{b.status}</Badge>
+                  <p className="text-sm font-bold text-emerald-400">+₹{Math.round(b.netEarning || 0)}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <p className="text-sm font-bold text-emerald-400">+₹{Math.round(b.netEarning)}</p>
-                  <Badge variant={statusColor[b.status] as any}>{b.status}</Badge>
-                </div>
-              </div>
-            ))}</div>
+              ))}
+            </div>
           ) : (
-            <div className="text-center py-8"><Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" /><p className="text-slate-400">No consultations today</p></div>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-slate-600" />
+              </div>
+              <p className="text-slate-400 font-medium">No consultations scheduled for today</p>
+              <p className="text-xs text-slate-600 mt-1">Patients will book when you&apos;re online with available slots</p>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      {/* Quick links */}
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "My Bookings", desc: "Past & upcoming", icon: Calendar, href: "/doctor/bookings" },
-          { label: "Earnings", desc: "Revenue & payouts", icon: IndianRupee, href: "/doctor/earnings" },
-          { label: "Documents", desc: "Certificates", icon: FileText, href: "/doctor/documents" },
+          { label: "Bookings", desc: "View & manage", icon: Calendar, href: "/doctor/bookings", color: "from-blue-500/10 to-cyan-500/5", iconColor: "text-blue-400" },
+          { label: "Schedule", desc: "Set availability", icon: Settings, href: "/doctor/settings", color: "from-teal-500/10 to-emerald-500/5", iconColor: "text-teal-400" },
+          { label: "Earnings", desc: "Revenue & payouts", icon: IndianRupee, href: "/doctor/earnings", color: "from-emerald-500/10 to-green-500/5", iconColor: "text-emerald-400" },
+          { label: "Lab Orders", desc: "Order tests", icon: FileText, href: "/doctor/lab-orders", color: "from-violet-500/10 to-purple-500/5", iconColor: "text-violet-400" },
         ].map((a) => (
-          <Card key={a.label} className="cursor-pointer hover:bg-white/5 transition-colors" onClick={() => router.push(a.href)}>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center"><a.icon className="w-6 h-6 text-teal-400" /></div>
-              <div><p className="font-bold">{a.label}</p><p className="text-xs text-slate-500">{a.desc}</p></div>
-            </CardContent>
-          </Card>
+          <button key={a.label} onClick={() => router.push(a.href)}
+            className="text-left rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.06] p-5 hover:border-white/[0.1] hover:bg-white/[0.04] transition-all group">
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center mb-3`}>
+              <a.icon className={`w-5 h-5 ${a.iconColor}`} />
+            </div>
+            <p className="font-bold text-sm">{a.label}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">{a.desc}</p>
+          </button>
         ))}
       </div>
     </div>

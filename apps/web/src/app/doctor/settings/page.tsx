@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Save, Stethoscope, Plus, Trash2, Calendar, Clock, Copy, ChevronDown, ChevronUp, Coffee, Sun, Moon, Sunrise } from "lucide-react";
+import { User, Save, Stethoscope, Plus, Trash2, Calendar, Clock, Copy, ChevronDown, ChevronUp, Coffee, Sun, Moon, Sunrise, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getIcon } from "@/lib/icon-map";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ export default function DoctorSettingsPage() {
   const [maxSessions, setMaxSessions] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "schedule" | "specializations">("schedule");
+  const [isApproved, setIsApproved] = useState(false);
 
   // Slots
   const [slots, setSlots] = useState<SlotData[]>([]);
@@ -65,6 +66,7 @@ export default function DoctorSettingsPage() {
       setExperience(String(p.experience || ""));
       setMaxSessions(String(p.maxSessionsPerDay || "20"));
       setQualifications((p.qualifications || []).join(", ") || p.qualification || "");
+      setIsApproved(p.verificationStatus === "APPROVED");
     }).catch(() => {});
 
     adminApi("/doctors/me/slots").then((s: any) => {
@@ -90,7 +92,7 @@ export default function DoctorSettingsPage() {
   const saveSlots = async () => {
     setSavingSlots(true);
     try {
-      await adminApi("/doctors/me/slots", { method: "POST", body: JSON.stringify(slots) });
+      await adminApi("/doctors/me/slots", { method: "POST", body: JSON.stringify({ slots }) });
       setSavedSlots(true);
       setTimeout(() => setSavedSlots(false), 3000);
     } catch (e: any) { alert(e.message); }
@@ -347,23 +349,45 @@ export default function DoctorSettingsPage() {
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Stethoscope className="w-4 h-4" /> My Specializations</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-500 mb-4">Select all that match your degrees. Patients searching these categories will find you.</p>
-            <div className="grid grid-cols-3 gap-2">
-              {allCategories.map((cat: any) => {
-                const { icon: Icon, color } = getIcon(cat.icon);
-                const selected = selectedCatIds.includes(cat.id);
-                return (
-                  <button key={cat.id} onClick={() => toggleCategory(cat.id)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${selected ? "bg-teal-500/20 text-teal-400 border-2 border-teal-500/40 shadow-lg shadow-teal-500/10" : "bg-white/5 text-slate-500 border-2 border-transparent hover:border-white/10"}`}>
-                    <Icon className="w-5 h-5" style={{ color: selected ? undefined : color }} />
-                    <span className="flex-1 text-left">{cat.name}</span>
-                    {selected && <span className="text-teal-400 text-lg">✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-            {selectedCatIds.length > 0 && (
-              <p className="text-xs text-teal-400 mt-4">{selectedCatIds.length} specialization(s) selected</p>
+            {isApproved ? (
+              <div>
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 mb-4">
+                  <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-amber-300">Specializations Locked</p>
+                    <p className="text-xs text-slate-400">Your specializations were verified during approval. Contact admin to change them.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {allCategories.filter((cat: any) => selectedCatIds.includes(cat.id)).map((cat: any) => {
+                    const { icon: Icon } = getIcon(cat.icon);
+                    return (
+                      <div key={cat.id} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                        <Icon className="w-5 h-5" /> <span className="flex-1">{cat.name}</span> <span>✓</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {selectedCatIds.length === 0 && <p className="text-sm text-slate-500">No specializations assigned. Contact admin.</p>}
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-slate-500 mb-4">Select all that match your degrees. These will be verified during approval.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {allCategories.map((cat: any) => {
+                    const { icon: Icon, color } = getIcon(cat.icon);
+                    const selected = selectedCatIds.includes(cat.id);
+                    return (
+                      <button key={cat.id} onClick={() => toggleCategory(cat.id)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${selected ? "bg-teal-500/20 text-teal-400 border-2 border-teal-500/40" : "bg-white/5 text-slate-500 border-2 border-transparent hover:border-white/10"}`}>
+                        <Icon className="w-5 h-5" style={{ color: selected ? undefined : color }} />
+                        <span className="flex-1 text-left">{cat.name}</span>
+                        {selected && <span className="text-teal-400">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
