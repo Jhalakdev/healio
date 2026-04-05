@@ -139,7 +139,7 @@ export default function AdminLayout({
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white truncate">Admin</p>
-                <p className="text-xs text-slate-500 truncate">admin@healio.in</p>
+                <p className="text-xs text-slate-500 truncate">BlinkCure Admin</p>
               </div>
             )}
             {!collapsed && (

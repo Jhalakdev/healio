@@ -20,6 +20,7 @@ export default function AdminContentPage() {
   // FAQ state
   const [faqQ, setFaqQ] = useState("");
   const [faqA, setFaqA] = useState("");
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
   // CMS state
   const [pageSlug, setPageSlug] = useState("");
   const [pageTitle, setPageTitle] = useState("");
@@ -27,6 +28,9 @@ export default function AdminContentPage() {
   // Banner state
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerSub, setBannerSub] = useState("");
+  const [bannerImage, setBannerImage] = useState("");
+  const [bannerLink, setBannerLink] = useState("");
+  const [bannerTarget, setBannerTarget] = useState("all");
 
   useEffect(() => {
     adminApi("/admin/faqs").then(setFaqs).catch(() => {});
@@ -36,8 +40,12 @@ export default function AdminContentPage() {
 
   const addFaq = async () => {
     if (!faqQ || !faqA) return;
-    await adminApi("/admin/faqs", { method: "POST", body: JSON.stringify({ question: faqQ, answer: faqA }) });
-    setFaqQ(""); setFaqA(""); setShowAdd(false);
+    if (editingFaqId) {
+      await adminApi(`/admin/faqs/${editingFaqId}`, { method: "PATCH", body: JSON.stringify({ question: faqQ, answer: faqA }) });
+    } else {
+      await adminApi("/admin/faqs", { method: "POST", body: JSON.stringify({ question: faqQ, answer: faqA }) });
+    }
+    setFaqQ(""); setFaqA(""); setShowAdd(false); setEditingFaqId(null);
     setFaqs(await adminApi("/admin/faqs"));
   };
 
@@ -55,7 +63,7 @@ export default function AdminContentPage() {
 
   const addBanner = async () => {
     if (!bannerTitle) return;
-    await adminApi("/admin/banners", { method: "POST", body: JSON.stringify({ title: bannerTitle, subtitle: bannerSub }) });
+    await adminApi("/admin/banners", { method: "POST", body: JSON.stringify({ title: bannerTitle, subtitle: bannerSub, imageUrl: bannerImage || undefined, linkUrl: bannerLink || undefined, target: bannerTarget }) });
     setBannerTitle(""); setBannerSub(""); setShowAdd(false);
     setBanners(await adminApi("/admin/banners"));
   };
@@ -97,7 +105,7 @@ export default function AdminContentPage() {
           <CardContent className="p-5 space-y-3">
             <Input placeholder="Question" value={faqQ} onChange={(e) => setFaqQ(e.target.value)} />
             <textarea
-              className="w-full p-3 rounded-xl border border-slate-200 text-sm min-h-[80px]"
+              className="w-full p-3 rounded-xl border border-slate-700 text-sm min-h-[80px]"
               placeholder="Answer"
               value={faqA}
               onChange={(e) => setFaqA(e.target.value)}
@@ -112,7 +120,7 @@ export default function AdminContentPage() {
           <CardContent className="p-5 space-y-3">
             <div className="flex gap-3">
               <select
-                className="px-3 py-2 rounded-xl border border-slate-200 text-sm"
+                className="px-3 py-2 rounded-xl border border-slate-700 text-sm"
                 value={pageSlug}
                 onChange={(e) => setPageSlug(e.target.value)}
               >
@@ -125,7 +133,7 @@ export default function AdminContentPage() {
               <Input placeholder="Page Title" value={pageTitle} onChange={(e) => setPageTitle(e.target.value)} className="flex-1" />
             </div>
             <textarea
-              className="w-full p-3 rounded-xl border border-slate-200 text-sm min-h-[150px]"
+              className="w-full p-3 rounded-xl border border-slate-700 text-sm min-h-[150px]"
               placeholder="Page content (supports HTML/Markdown)"
               value={pageContent}
               onChange={(e) => setPageContent(e.target.value)}
@@ -140,6 +148,13 @@ export default function AdminContentPage() {
           <CardContent className="p-5 space-y-3">
             <Input placeholder="Banner Title" value={bannerTitle} onChange={(e) => setBannerTitle(e.target.value)} />
             <Input placeholder="Subtitle (optional)" value={bannerSub} onChange={(e) => setBannerSub(e.target.value)} />
+            <Input placeholder="Image URL (optional)" value={bannerImage} onChange={(e) => setBannerImage(e.target.value)} />
+            <Input placeholder="Link URL (optional)" value={bannerLink} onChange={(e) => setBannerLink(e.target.value)} />
+            <select className="px-3 py-2 rounded-xl border border-slate-700 bg-transparent text-sm" value={bannerTarget} onChange={(e) => setBannerTarget(e.target.value)}>
+              <option value="all">All Users</option>
+              <option value="patients">Patients Only</option>
+              <option value="doctors">Doctors Only</option>
+            </select>
             <Button onClick={addBanner}><Save className="w-4 h-4" /> Save Banner</Button>
           </CardContent>
         </Card>
@@ -156,6 +171,9 @@ export default function AdminContentPage() {
                   <p className="font-bold text-sm">{f.question}</p>
                   <p className="text-sm text-slate-500 mt-1">{f.answer}</p>
                 </div>
+                <Button size="sm" variant="ghost" onClick={() => { setEditingFaqId(f.id); setFaqQ(f.question); setFaqA(f.answer); setShowAdd(true); }}>
+                  <Edit2 className="w-3 h-3" />
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => deleteFaq(f.id)}>
                   <Trash2 className="w-3 h-3 text-red-400" />
                 </Button>

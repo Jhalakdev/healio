@@ -19,8 +19,15 @@ export default function AdminDoctorsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [docs, setDocs] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [docFee, setDocFee] = useState("");
+  const [docSlots, setDocSlots] = useState<any[]>([]);
+  const [docCats, setDocCats] = useState<string[]>([]);
 
-  useEffect(() => { loadDoctors(); }, []);
+  useEffect(() => {
+    loadDoctors();
+    adminApi("/categories/all").then(setAllCategories).catch(() => {});
+  }, []);
 
   const loadDoctors = async () => {
     try { setDoctors(await adminApi("/admin/doctors")); } catch (e) { console.error(e); }
@@ -53,9 +60,43 @@ export default function AdminDoctorsPage() {
 
   // No per-doctor fee — consultation fee is set globally via Plans
 
+  const loadSlots = async (doctorId: string) => {
+    try { setDocSlots(await adminApi(`/admin/doctors/${doctorId}/slots`)); } catch { setDocSlots([]); }
+  };
+
+  const loadDocCats = async (doctorId: string) => {
+    try {
+      const cats = await adminApi(`/admin/doctors/${doctorId}/categories`);
+      setDocCats(Array.isArray(cats) ? cats.map((c: any) => c.categoryId || c.id) : []);
+    } catch { setDocCats([]); }
+  };
+
+  const saveFee = async (doctorId: string) => {
+    if (!docFee) return;
+    try {
+      await adminApi(`/admin/doctors/${doctorId}/price`, { method: "PATCH", body: JSON.stringify({ consultationFee: Number(docFee) }) });
+      alert("Fee updated");
+      loadDoctors();
+    } catch (e: any) { alert(e.message || "Failed"); }
+  };
+
+  const saveCats = async (doctorId: string) => {
+    try {
+      await adminApi(`/admin/doctors/${doctorId}/categories`, { method: "POST", body: JSON.stringify({ categoryIds: docCats }) });
+      alert("Categories updated");
+    } catch (e: any) { alert(e.message || "Failed"); }
+  };
+
   const toggleExpand = (docId: string) => {
-    if (expandedId === docId) { setExpandedId(null); setDocs([]); }
-    else { setExpandedId(docId); loadDocs(docId); }
+    if (expandedId === docId) { setExpandedId(null); setDocs([]); setDocSlots([]); }
+    else {
+      setExpandedId(docId);
+      loadDocs(docId);
+      loadSlots(docId);
+      loadDocCats(docId);
+      const doc = doctors.find(d => d.id === docId);
+      setDocFee(String(doc?.consultationFee || ""));
+    }
   };
 
   const statusBadge: Record<string, string> = {
@@ -212,7 +253,63 @@ export default function AdminDoctorsPage() {
                       </div>
                     </div>
 
-                    {/* Note: consultation fee is set globally via Plans, not per doctor */}
+                    {/* Consultation Fee */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase mb-3">Consultation Fee</h4>
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
+                        <IndianRupee className="w-5 h-5 text-emerald-400" />
+                        <span className="text-sm font-bold">Current: ₹{Number(doc.consultationFee || 0)}</span>
+                        <Input type="number" className="w-32" placeholder="New fee" value={docFee} onChange={(e) => setDocFee(e.target.value)} />
+                        <Button size="sm" onClick={() => saveFee(doc.id)}><Save className="w-3 h-3" /> Update Fee</Button>
+                      </div>
+                    </div>
+
+                    {/* Qualifications */}
+                    {doc.qualifications?.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-slate-400 uppercase mb-3">Qualifications</h4>
+                        <div className="flex gap-2 flex-wrap">
+                          {doc.qualifications.map((q: string, i: number) => (
+                            <Badge key={i} variant="secondary">{q}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Categories */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase mb-3">Assigned Specialist Categories</h4>
+                      <div className="flex gap-2 flex-wrap mb-3">
+                        {allCategories.map((cat: any) => (
+                          <Button key={cat.id} size="sm" variant={docCats.includes(cat.id) ? "default" : "outline"}
+                            onClick={() => setDocCats(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
+                          >{cat.name}</Button>
+                        ))}
+                      </div>
+                      <Button size="sm" onClick={() => saveCats(doc.id)}><Save className="w-3 h-3" /> Save Categories</Button>
+                    </div>
+
+                    {/* Slots */}
+                    {docSlots.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-slate-400 uppercase mb-3">Availability Schedule</h4>
+                        <div className="grid grid-cols-7 gap-2">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => {
+                            const daySlots = docSlots.filter((s: any) => s.dayOfWeek === i);
+                            return (
+                              <div key={day} className="p-2 rounded-xl bg-white/5 text-center">
+                                <p className="text-xs font-bold mb-2">{day}</p>
+                                {daySlots.length > 0 ? daySlots.map((s: any, j: number) => (
+                                  <p key={j} className={`text-[10px] ${s.isBreak ? "text-red-400" : "text-emerald-400"}`}>
+                                    {s.startTime}-{s.endTime}{s.isBreak ? " (break)" : ""}
+                                  </p>
+                                )) : <p className="text-[10px] text-slate-600">Off</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Payment / UPI details */}
                     <div>
