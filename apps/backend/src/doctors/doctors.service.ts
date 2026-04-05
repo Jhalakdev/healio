@@ -109,11 +109,13 @@ export class DoctorsService {
   }
 
   async updateProfile(userId: string, dto: UpdateDoctorProfileDto) {
-    const { qualification, ...rest } = dto;
+    const { qualification, specialization, documentsUrl, ...rest } = dto;
     const data: any = { ...rest };
     if (qualification) {
       data.qualifications = qualification.split(',').map((q: string) => q.trim()).filter(Boolean);
-      data.qualification = qualification;
+    }
+    if (specialization) {
+      data.specialization = specialization;
     }
     return this.prisma.doctor.update({
       where: { userId },
