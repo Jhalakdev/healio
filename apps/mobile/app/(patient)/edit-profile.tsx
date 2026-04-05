@@ -87,7 +87,7 @@ export default function EditProfileScreen() {
         <View style={styles.row}>
           <View style={[styles.field, { flex: 1 }]}>
             <Text style={styles.label}>Height</Text>
-            <TextInput style={styles.input} value={height} onChangeText={setHeight} placeholder="5'8" or 175 cm" placeholderTextColor={colors.gray400} />
+            <TextInput style={styles.input} value={height} onChangeText={setHeight} placeholder="175 cm" placeholderTextColor={colors.gray400} />
           </View>
           <View style={[styles.field, { flex: 1 }]}>
             <Text style={styles.label}>Weight</Text>
