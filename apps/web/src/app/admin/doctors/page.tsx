@@ -30,7 +30,7 @@ export default function AdminDoctorsPage() {
   const updateStatus = async (doctorId: string, status: string) => {
     let reason: string | undefined;
     if (status === "REJECTED") {
-      reason = prompt("Rejection reason (mandatory):\nThis will be shown to the doctor.");
+      reason = prompt("Rejection reason (mandatory):\nThis will be shown to the doctor.") || undefined;
       if (!reason) return; // cancelled
     }
     try {
