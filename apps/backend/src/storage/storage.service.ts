@@ -28,7 +28,7 @@ export class StorageService {
       },
     });
 
-    this.bucket = config.get<string>('R2_BUCKET_NAME', 'healio-uploads');
+    this.bucket = config.get<string>('R2_BUCKET_NAME', 'blinkcure');
   }
 
   async upload(
