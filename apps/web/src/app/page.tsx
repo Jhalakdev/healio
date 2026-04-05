@@ -2,21 +2,8 @@
 
 import { motion } from "framer-motion";
 import {
-  Video,
-  Shield,
-  Clock,
-  Wallet,
-  Star,
-  ArrowRight,
-  CheckCircle2,
-  Stethoscope,
-  HeartPulse,
-  PhoneCall,
-  FileText,
-  Users,
-  Zap,
-  Globe,
-  Lock,
+  Video, Shield, Clock, Wallet, Star, ArrowRight, CheckCircle2,
+  Stethoscope, HeartPulse, PhoneCall, FileText, Users, Zap, Globe, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,164 +15,120 @@ const fadeUp = {
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
 };
-
-const stagger = {
-  animate: { transition: { staggerChildren: 0.1 } },
-};
+const stagger = { animate: { transition: { staggerChildren: 0.1 } } };
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass">
+    <main className="min-h-screen bg-white text-slate-900">
+      {/* ══════ NAV ══════ */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-md shadow-teal-500/20">
               <HeartPulse className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight">
-              Blink<span className="gradient-text">Cure</span>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900">
+              Blink<span className="text-teal-600">Cure</span>
             </span>
           </Link>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-teal-600 transition-colors">
-              Features
-            </a>
-            <a href="#how-it-works" className="hover:text-teal-600 transition-colors">
-              How it works
-            </a>
-            <a href="#for-doctors" className="hover:text-teal-600 transition-colors">
-              For Doctors
-            </a>
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
+            <a href="#features" className="hover:text-teal-600 transition-colors">Features</a>
+            <a href="#how-it-works" className="hover:text-teal-600 transition-colors">How it works</a>
+            <a href="#for-doctors" className="hover:text-teal-600 transition-colors">For Doctors</a>
+            <a href="#pricing" className="hover:text-teal-600 transition-colors">Pricing</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/auth/login">
-              <Button variant="ghost" size="sm">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/auth/login">
-              <Button size="sm">Get Started</Button>
-            </Link>
+            <Link href="/auth/login"><Button variant="ghost" size="sm" className="text-slate-600">Log in</Button></Link>
+            <Link href="/auth/login"><Button size="sm" className="rounded-full px-5">Get Started</Button></Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-20 overflow-hidden grid-bg">
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-emerald-400/15 rounded-full blur-3xl" />
+      {/* ══════ HERO ══════ */}
+      <section className="relative pt-32 pb-24 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-b from-teal-50/50 via-white to-white" />
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-teal-200/30 rounded-full blur-[100px]" />
+        <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-emerald-200/20 rounded-full blur-[100px]" />
 
         <div className="relative max-w-7xl mx-auto px-6">
-          <motion.div
-            className="text-center max-w-4xl mx-auto"
-            initial="initial"
-            animate="animate"
-            variants={stagger}
-          >
+          <motion.div className="text-center max-w-4xl mx-auto" initial="initial" animate="animate" variants={stagger}>
             <motion.div variants={fadeUp}>
-              <Badge variant="default" className="mb-6 px-4 py-1.5 text-sm">
-                <Zap className="w-3.5 h-3.5 mr-1.5" />
+              <Badge className="mb-6 px-4 py-1.5 text-sm bg-teal-50 text-teal-700 border-teal-200/60 rounded-full">
+                <Zap className="w-3.5 h-3.5 mr-1.5 text-teal-500" />
                 Trusted by 10,000+ patients across India
               </Badge>
             </motion.div>
 
-            <motion.h1
-              variants={fadeUp}
-              className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.08]"
-            >
-              See a Doctor in{" "}
-              <span className="gradient-text">60 Seconds</span>
+            <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.05] text-slate-900">
+              Healthcare that{" "}
+              <span className="relative">
+                <span className="relative z-10 text-teal-600">comes to you</span>
+                <span className="absolute bottom-2 left-0 right-0 h-3 bg-teal-100/60 -z-0 rounded-full" />
+              </span>
             </motion.h1>
 
-            <motion.p
-              variants={fadeUp}
-              className="mt-6 text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed"
-            >
-              Skip the waiting room. Connect with verified doctors instantly via
-              HD video — from anywhere, anytime. Secure, affordable, and built
-              for India.
+            <motion.p variants={fadeUp} className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Connect with verified doctors via HD video in under 60 seconds.
+              No downloads, no waiting rooms — just instant, affordable care.
             </motion.p>
 
-            <motion.div
-              variants={fadeUp}
-              className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
+            <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/auth/login">
-                <Button size="xl" className="min-w-[200px]">
-                  <PhoneCall className="w-5 h-5" />
-                  Consult Now
+                <Button size="xl" className="min-w-[220px] rounded-full h-14 text-base shadow-xl shadow-teal-500/20 hover:shadow-teal-500/30">
+                  <PhoneCall className="w-5 h-5" /> Book Consultation
                 </Button>
               </Link>
               <Link href="/auth/doctor-register">
-                <Button variant="outline" size="xl" className="min-w-[200px]">
-                  <Stethoscope className="w-5 h-5" />
-                  Join as Doctor
+                <Button variant="outline" size="xl" className="min-w-[220px] rounded-full h-14 text-base border-slate-200 hover:border-teal-300 hover:bg-teal-50/50">
+                  <Stethoscope className="w-5 h-5" /> Join as Doctor
                 </Button>
               </Link>
             </motion.div>
 
-            <motion.div
-              variants={fadeUp}
-              className="mt-8 flex items-center justify-center gap-6 text-sm text-slate-400"
-            >
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                No app download needed
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                Verified MBBS doctors
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                Prescription included
-              </span>
+            <motion.div variants={fadeUp} className="mt-8 flex items-center justify-center gap-6 text-sm text-slate-500">
+              {["No app download needed", "Verified MBBS doctors", "Prescription included"].map((t) => (
+                <span key={t} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {t}
+                </span>
+              ))}
             </motion.div>
           </motion.div>
 
-          {/* Hero visual — consultation card */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-16 max-w-4xl mx-auto"
-          >
-            <div className="relative rounded-3xl border border-slate-200/80 bg-white/90 backdrop-blur-sm shadow-2xl shadow-teal-500/10 overflow-hidden">
+          {/* Hero card */}
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-20 max-w-5xl mx-auto">
+            <div className="relative rounded-3xl bg-white shadow-2xl shadow-slate-200/80 border border-slate-100 overflow-hidden">
               <div className="bg-gradient-to-r from-teal-600 to-emerald-600 px-8 py-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-white/30 pulse-online" />
-                  <span className="text-white font-semibold">
-                    Live Consultation
-                  </span>
+                  <div className="w-3 h-3 rounded-full bg-white/40 pulse-online" />
+                  <span className="text-white font-semibold text-sm">Live Consultation in Progress</span>
                 </div>
-                <span className="text-white/80 text-sm font-mono">12:34</span>
+                <span className="text-white/70 text-sm font-mono tracking-wider">12:34</span>
               </div>
-              <div className="p-8 grid md:grid-cols-2 gap-8">
-                <div className="aspect-video rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex flex-col items-center justify-center gap-3 border border-slate-100">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
-                    <Stethoscope className="w-10 h-10 text-white" />
+              <div className="p-8 md:p-10 grid md:grid-cols-2 gap-10">
+                <div className="aspect-video rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center gap-4 border border-slate-100">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                    <Stethoscope className="w-12 h-12 text-white" />
                   </div>
                   <div className="text-center">
-                    <p className="font-semibold text-slate-700">
-                      Dr. Priya Sharma
-                    </p>
-                    <p className="text-sm text-slate-400">General Medicine</p>
+                    <p className="font-bold text-slate-800">Dr. Priya Sharma</p>
+                    <p className="text-sm text-slate-400">General Medicine · 8 yrs exp</p>
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                      {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />)}
+                      <span className="text-xs text-slate-400 ml-1">4.9</span>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-4">
                   {[
-                    { icon: Video, title: "HD Video Call", desc: "Crystal clear on any network" },
-                    { icon: FileText, title: "Share Reports", desc: "Upload during consultation" },
-                    { icon: Shield, title: "End-to-End Secure", desc: "Your data stays private" },
-                    { icon: Clock, title: "15 Min Session", desc: "Extendable by your doctor" },
+                    { icon: Video, title: "HD Video Call", desc: "Crystal clear on any network speed", color: "bg-blue-50 text-blue-600" },
+                    { icon: FileText, title: "Upload Reports", desc: "Share PDFs and images during consultation", color: "bg-emerald-50 text-emerald-600" },
+                    { icon: Shield, title: "End-to-End Encrypted", desc: "Your medical data stays completely private", color: "bg-violet-50 text-violet-600" },
+                    { icon: Clock, title: "15 Min Session", desc: "Focused consultation, extendable by doctor", color: "bg-amber-50 text-amber-600" },
                   ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-                        <item.icon className="w-5 h-5 text-teal-600" />
+                    <div key={item.title} className="flex items-center gap-4 p-3.5 rounded-xl hover:bg-slate-50 transition-colors">
+                      <div className={`w-11 h-11 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
+                        <item.icon className="w-5 h-5" />
                       </div>
                       <div>
                         <p className="font-semibold text-sm text-slate-800">{item.title}</p>
@@ -200,74 +143,55 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-12 border-y border-slate-200/60 bg-white/50">
+      {/* ══════ STATS ══════ */}
+      <section className="py-16 border-y border-slate-100 bg-slate-50/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: "50,000+", label: "Consultations", icon: PhoneCall },
+              { value: "50,000+", label: "Consultations Done", icon: PhoneCall },
               { value: "500+", label: "Verified Doctors", icon: Stethoscope },
               { value: "4.9/5", label: "Patient Rating", icon: Star },
               { value: "<60s", label: "Avg Wait Time", icon: Clock },
             ].map((stat) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <stat.icon className="w-6 h-6 text-teal-500 mx-auto mb-2" />
-                <p className="text-3xl font-extrabold tracking-tight gradient-text">{stat.value}</p>
-                <p className="text-sm text-slate-400 mt-1">{stat.label}</p>
+              <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto mb-3">
+                  <stat.icon className="w-5 h-5 text-teal-600" />
+                </div>
+                <p className="text-3xl font-extrabold tracking-tight text-slate-900">{stat.value}</p>
+                <p className="text-sm text-slate-500 mt-1">{stat.label}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24">
+      {/* ══════ FEATURES ══════ */}
+      <section id="features" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.div variants={fadeUp}>
-              <Badge variant="secondary" className="mb-4">Features</Badge>
-            </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-extrabold tracking-tight">
-              Everything you need<br />
-              <span className="gradient-text">in one platform</span>
+          <motion.div initial="initial" whileInView="animate" viewport={{ once: true }} variants={stagger} className="text-center mb-16">
+            <motion.div variants={fadeUp}><Badge className="mb-4 bg-teal-50 text-teal-700 border-teal-200/60 rounded-full">Features</Badge></motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+              Everything you need,<br /><span className="text-teal-600">nothing you don&apos;t</span>
             </motion.h2>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Video, title: "HD Video Consultation", description: "Adaptive streaming that works even on 3G. Auto-fallback to audio when network drops.", gradient: "from-blue-500 to-cyan-500" },
-              { icon: Clock, title: "Instant + Scheduled", description: "See a doctor right now, or book a slot that fits your schedule. One tap is all it takes.", gradient: "from-teal-500 to-emerald-500" },
-              { icon: FileText, title: "Digital Prescription", description: "Get your prescription as a PDF instantly after your consultation. Download anytime.", gradient: "from-emerald-500 to-green-500" },
-              { icon: Wallet, title: "Wallet & Payments", description: "Pre-loaded wallet for instant bookings. Automatic refunds if anything goes wrong.", gradient: "from-violet-500 to-purple-500" },
-              { icon: Shield, title: "Privacy First", description: "End-to-end encrypted calls. Your medical records are stored with signed URL access only.", gradient: "from-orange-500 to-red-500" },
-              { icon: FileText, title: "Share Reports Live", description: "Upload PDFs, images, and reports during your call. Doctor sees them instantly.", gradient: "from-pink-500 to-rose-500" },
-            ].map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-              >
-                <Card className="h-full hover:shadow-lg hover:shadow-teal-500/5 hover:-translate-y-1 transition-all duration-300 group">
+              { icon: Video, title: "HD Video Consultation", desc: "Adaptive streaming that works even on 3G. Auto-fallback to audio on poor networks.", gradient: "from-blue-500 to-cyan-500", bg: "bg-blue-50" },
+              { icon: Clock, title: "Instant + Scheduled", desc: "See a doctor now or book a slot that fits your schedule. One tap is all it takes.", gradient: "from-teal-500 to-emerald-500", bg: "bg-teal-50" },
+              { icon: FileText, title: "Digital Prescription", desc: "Get your prescription instantly after consultation. Download anytime from your history.", gradient: "from-emerald-500 to-green-500", bg: "bg-emerald-50" },
+              { icon: Wallet, title: "Smart Wallet", desc: "Pre-loaded wallet for instant bookings. Automatic refunds if anything goes wrong.", gradient: "from-violet-500 to-purple-500", bg: "bg-violet-50" },
+              { icon: Shield, title: "Privacy First", desc: "End-to-end encrypted calls. Medical records stored securely with signed URL access.", gradient: "from-orange-500 to-red-500", bg: "bg-orange-50" },
+              { icon: Users, title: "Family Plans", desc: "Add up to 5 family members. Children get 10% discount. Share plans across phones.", gradient: "from-pink-500 to-rose-500", bg: "bg-pink-50" },
+            ].map((f, i) => (
+              <motion.div key={f.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                <Card className="h-full border-slate-100 hover:shadow-xl hover:shadow-slate-100 hover:-translate-y-1 transition-all duration-300 group bg-white">
                   <CardContent className="p-7">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                      <feature.icon className="w-6 h-6 text-white" />
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${f.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-md`}>
+                      <f.icon className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">{feature.description}</p>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">{f.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -276,119 +200,90 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how-it-works" className="py-24 bg-slate-50/50 grid-bg">
+      {/* ══════ HOW IT WORKS ══════ */}
+      <section id="how-it-works" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.div variants={fadeUp}>
-              <Badge variant="secondary" className="mb-4">Simple Process</Badge>
-            </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-extrabold tracking-tight">
-              Three steps to <span className="gradient-text">better health</span>
+          <motion.div initial="initial" whileInView="animate" viewport={{ once: true }} variants={stagger} className="text-center mb-16">
+            <motion.div variants={fadeUp}><Badge className="mb-4 bg-white text-slate-600 border-slate-200 rounded-full">Simple Process</Badge></motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+              Three steps to <span className="text-teal-600">better health</span>
             </motion.h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { step: "01", title: "Choose a Doctor", description: "Browse verified doctors by specialization. See who's online right now or schedule for later.", icon: Users },
-              { step: "02", title: "Share Your Symptoms", description: "Upload reports, describe symptoms, and list medications. Your doctor sees everything before the call.", icon: FileText },
-              { step: "03", title: "Start Consultation", description: "Join the HD video call. Chat, share files, and get your prescription — all in one session.", icon: Video },
+              { step: "01", title: "Choose a Doctor", desc: "Browse by specialization. See who's online or schedule for later.", icon: Users, color: "from-blue-500 to-cyan-500" },
+              { step: "02", title: "Share Symptoms", desc: "Upload reports, describe symptoms. Doctor sees everything before the call.", icon: FileText, color: "from-teal-500 to-emerald-500" },
+              { step: "03", title: "Get Treatment", desc: "HD video call, live chat, prescription — all in one focused session.", icon: Video, color: "from-emerald-500 to-green-500" },
             ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15, duration: 0.5 }}
-                className="relative"
-              >
-                <Card className="text-center p-8 h-full">
-                  <span className="text-6xl font-black text-slate-100 absolute top-6 right-6">{item.step}</span>
+              <motion.div key={item.step} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}>
+                <div className="bg-white rounded-3xl p-8 text-center h-full border border-slate-100 hover:shadow-lg transition-shadow relative overflow-hidden">
+                  <span className="text-7xl font-black text-slate-50 absolute top-4 right-6 select-none">{item.step}</span>
                   <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mx-auto mb-6">
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto mb-6 shadow-lg`}>
                       <item.icon className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">{item.description}</p>
+                    <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
                   </div>
-                </Card>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* For Doctors CTA */}
-      <section id="for-doctors" className="py-24">
+      {/* ══════ FOR DOCTORS ══════ */}
+      <section id="for-doctors" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative rounded-3xl overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600" />
-            <div className="relative px-8 md:px-16 py-16 md:py-20 flex flex-col lg:flex-row items-center gap-12">
-              <div className="flex-1 text-white">
-                <Badge className="mb-4 bg-white/20 text-white border-0">For Doctors</Badge>
-                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="rounded-[2rem] overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/30">
+            <div className="px-8 md:px-16 py-16 md:py-20 flex flex-col lg:flex-row items-center gap-16">
+              <div className="flex-1">
+                <Badge className="mb-5 bg-teal-500/10 text-teal-400 border-teal-500/20 rounded-full">For Doctors</Badge>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-5 leading-tight">
                   Grow your practice.<br />See patients online.
                 </h2>
-                <p className="text-lg text-white/80 mb-8 max-w-lg leading-relaxed">
-                  Join BlinkCure and reach thousands of patients from the comfort of
-                  your clinic or home. Set your own schedule, earn per
-                  consultation, and focus on what you do best.
+                <p className="text-lg text-slate-400 mb-8 max-w-lg leading-relaxed">
+                  Join BlinkCure and reach thousands of patients. Set your own schedule, earn per consultation, and focus on what matters.
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-8">
-                  {["Set your own hours", "Earn 70% per consult", "See patient reports before call", "Digital prescription tools"].map((item) => (
-                    <div key={item} className="flex items-center gap-2 text-sm text-white/90">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
-                      {item}
+                  {["Set your own hours", "Earn 70% per consult", "See reports before call", "Digital prescriptions"].map((item) => (
+                    <div key={item} className="flex items-center gap-2 text-sm text-slate-300">
+                      <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" /> {item}
                     </div>
                   ))}
                 </div>
                 <Link href="/auth/doctor-register">
-                  <Button size="xl" className="bg-white text-teal-700 hover:bg-white/90 shadow-xl">
-                    Register as Doctor
-                    <ArrowRight className="w-5 h-5" />
+                  <Button size="xl" className="bg-white text-slate-900 hover:bg-slate-100 shadow-xl rounded-full h-14 text-base px-8">
+                    Register as Doctor <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
               </div>
               <div className="flex-1 flex justify-center">
-                <div className="w-72 h-96 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 p-6 flex flex-col">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="w-80 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 p-6 space-y-4">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
                       <Stethoscope className="w-6 h-6 text-white" />
                     </div>
-                    <div>
-                      <p className="font-bold text-white">Dr. Sharma</p>
-                      <p className="text-xs text-white/60">General Medicine</p>
+                    <div><p className="font-bold text-white">Dr. Sharma</p><p className="text-xs text-slate-400">General Medicine</p></div>
+                  </div>
+                  {[
+                    { label: "Today's Consults", value: "12", color: "text-blue-400" },
+                    { label: "Earnings", value: "₹8,400", color: "text-emerald-400" },
+                    { label: "Rating", value: "4.9 ★", color: "text-amber-400" },
+                    { label: "Patients", value: "2,340", color: "text-violet-400" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                      <span className="text-xs text-slate-400">{stat.label}</span>
+                      <span className={`text-sm font-bold ${stat.color}`}>{stat.value}</span>
                     </div>
-                  </div>
-                  <div className="space-y-3 flex-1">
-                    {[
-                      { label: "Today's Consults", value: "12" },
-                      { label: "Earnings", value: "₹8,400" },
-                      { label: "Rating", value: "4.9 ★" },
-                      { label: "Patients", value: "2,340" },
-                    ].map((stat) => (
-                      <div key={stat.label} className="flex items-center justify-between p-3 rounded-xl bg-white/10">
-                        <span className="text-xs text-white/70">{stat.label}</span>
-                        <span className="text-sm font-bold text-white">{stat.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex items-center justify-between p-3 rounded-xl bg-emerald-400/20">
-                    <span className="text-xs text-emerald-200">Status</span>
+                  ))}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <span className="text-xs text-emerald-300">Status</span>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-emerald-400 pulse-online" />
-                      <span className="text-sm font-semibold text-emerald-300">Online</span>
+                      <span className="text-sm font-semibold text-emerald-400">Online</span>
                     </div>
                   </div>
                 </div>
@@ -398,29 +293,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust */}
-      <section className="py-24 bg-slate-50/50">
+      {/* ══════ TRUST ══════ */}
+      <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-10">
             {[
-              { icon: Lock, title: "Bank-Grade Security", description: "All data encrypted at rest and in transit. Medical records accessible only via signed URLs." },
-              { icon: Globe, title: "Works Everywhere", description: "Adaptive video quality works on 3G, 4G, and WiFi. Auto-fallback to audio on poor networks." },
-              { icon: Wallet, title: "Money-Back Guarantee", description: "Automatic refund if the doctor doesn't join or the call quality is poor. No questions asked." },
+              { icon: Lock, title: "Bank-Grade Security", desc: "All data encrypted at rest and in transit. Medical records accessible only via signed URLs." },
+              { icon: Globe, title: "Works Everywhere", desc: "Adaptive video quality works on 3G, 4G, and WiFi. Auto-fallback to audio on poor networks." },
+              { icon: Wallet, title: "Money-Back Guarantee", desc: "Automatic refund if the doctor doesn't join or call quality is poor. No questions asked." },
             ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-4"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center shrink-0">
+              <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
                   <item.icon className="w-6 h-6 text-teal-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold mb-1">{item.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">{item.description}</p>
+                  <h3 className="font-bold text-slate-900 mb-1">{item.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -428,58 +317,54 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-24">
+      {/* ══════ FINAL CTA ══════ */}
+      <section className="py-24 bg-white">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-              Ready to feel <span className="gradient-text">better</span>?
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-5">
+              Your doctor is just<br />a <span className="text-teal-600">click away</span>
             </h2>
-            <p className="text-lg text-slate-500 mb-8">Your doctor is just a click away. No downloads, no waiting rooms.</p>
+            <p className="text-lg text-slate-500 mb-8">No downloads, no waiting rooms, no hassle.</p>
             <Link href="/auth/login">
-              <Button size="xl" className="min-w-[240px]">
-                <HeartPulse className="w-5 h-5" />
-                Start Free Consultation
+              <Button size="xl" className="min-w-[260px] rounded-full h-14 text-base shadow-xl shadow-teal-500/20">
+                <HeartPulse className="w-5 h-5" /> Start Consultation Now
               </Button>
             </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200/60 py-12 bg-white/50">
+      {/* ══════ FOOTER ══════ */}
+      <footer className="border-t border-slate-100 py-16 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-4 gap-10">
             <div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
                   <HeartPulse className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-lg font-bold">BlinkCure</span>
+                <span className="text-lg font-extrabold text-slate-900">BlinkCure</span>
               </div>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Making quality healthcare accessible to every Indian through technology.
-              </p>
+              <p className="text-sm text-slate-500 leading-relaxed">Making quality healthcare accessible to every Indian through technology.</p>
             </div>
             {[
-              { title: "Product", links: ["For Patients", "For Doctors", "Pricing", "Download App"] },
-              { title: "Company", links: ["About Us", "Careers", "Blog", "Contact"] },
-              { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Refund Policy"] },
+              { title: "Product", links: [{ text: "For Patients", href: "/auth/login" }, { text: "For Doctors", href: "/auth/doctor-register" }, { text: "Download App", href: "#" }] },
+              { title: "Company", links: [{ text: "About Us", href: "#" }, { text: "Contact", href: "#" }, { text: "Careers", href: "#" }] },
+              { title: "Legal", links: [{ text: "Privacy Policy", href: "#" }, { text: "Terms of Service", href: "#" }, { text: "Refund Policy", href: "#" }] },
             ].map((col) => (
               <div key={col.title}>
-                <h4 className="font-semibold text-sm mb-3">{col.title}</h4>
-                <ul className="space-y-2">
+                <h4 className="font-bold text-sm text-slate-900 mb-4">{col.title}</h4>
+                <ul className="space-y-2.5">
                   {col.links.map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-sm text-slate-400 hover:text-teal-600 transition-colors">{link}</a>
-                    </li>
+                    <li key={link.text}><a href={link.href} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">{link.text}</a></li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
-          <div className="mt-12 pt-8 border-t border-slate-200/60 text-center text-sm text-slate-400">
-            &copy; {new Date().getFullYear()} Web Accuracy Pvt. Ltd. All rights reserved.
+          <div className="mt-14 pt-8 border-t border-slate-200/60 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-slate-400">&copy; {new Date().getFullYear()} Web Accuracy Pvt. Ltd. All rights reserved.</p>
+            <p className="text-xs text-slate-300">BlinkCure — a venture of Web Accuracy Pvt. Ltd.</p>
           </div>
         </div>
       </footer>

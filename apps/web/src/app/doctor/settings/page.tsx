@@ -80,11 +80,14 @@ export default function DoctorSettingsPage() {
   const saveProfile = async () => {
     setSaving(true);
     try {
+      const body = isApproved
+        ? { maxSessionsPerDay: maxSessions ? Number(maxSessions) : undefined }
+        : { name: name || undefined, bio: bio || undefined, experience: experience ? Number(experience) : undefined, maxSessionsPerDay: maxSessions ? Number(maxSessions) : undefined, qualification: qualifications || undefined };
       await adminApi("/doctors/me", {
         method: "PATCH",
-        body: JSON.stringify({ name: name || undefined, bio: bio || undefined, experience: experience ? Number(experience) : undefined, maxSessionsPerDay: maxSessions ? Number(maxSessions) : undefined, qualification: qualifications || undefined }),
+        body: JSON.stringify(body),
       });
-      alert("Profile updated!");
+      alert(isApproved ? "Max sessions updated!" : "Profile updated!");
     } catch (e: any) { alert(e.message); }
     setSaving(false);
   };
@@ -323,23 +326,54 @@ export default function DoctorSettingsPage() {
       {/* ═══ PROFILE TAB ═══ */}
       {activeTab === "profile" && (
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="w-4 h-4" /> Edit Profile</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="w-4 h-4" /> {isApproved ? "Profile" : "Edit Profile"}</CardTitle></CardHeader>
           <CardContent className="space-y-4 max-w-xl">
-            <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Display Name</label>
-              <Input placeholder="Dr. Priya Sharma" value={name} onChange={(e) => setName(e.target.value)} /></div>
-            <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Qualifications (comma separated)</label>
-              <Input placeholder="MBBS, MD, DNB" value={qualifications} onChange={(e) => setQualifications(e.target.value)} /></div>
-            <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Bio / About</label>
-              <textarea className="w-full p-3 rounded-xl border bg-transparent text-sm min-h-[120px]" placeholder="Tell patients about your experience..." value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Experience (years)</label>
-                <Input type="number" placeholder="8" value={experience} onChange={(e) => setExperience(e.target.value)} /></div>
-              <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Max Sessions/Day</label>
-                <Input type="number" placeholder="20" value={maxSessions} onChange={(e) => setMaxSessions(e.target.value)} /></div>
-            </div>
-            <Button onClick={saveProfile} disabled={saving} className="w-full">
-              <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Profile"}
-            </Button>
+            {isApproved && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-amber-300">Profile Locked</p>
+                  <p className="text-xs text-slate-400">Profile locked after verification. Contact admin to make changes.</p>
+                </div>
+              </div>
+            )}
+            {isApproved ? (
+              <>
+                <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Display Name</label>
+                  <p className="text-sm text-white py-2 px-3 rounded-xl bg-white/5 border border-white/10">{name || <span className="text-slate-600">Not set</span>}</p></div>
+                <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Qualifications</label>
+                  <p className="text-sm text-white py-2 px-3 rounded-xl bg-white/5 border border-white/10">{qualifications || <span className="text-slate-600">Not set</span>}</p></div>
+                <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Bio / About</label>
+                  <p className="text-sm text-white py-2 px-3 rounded-xl bg-white/5 border border-white/10 min-h-[80px] whitespace-pre-wrap">{bio || <span className="text-slate-600">Not set</span>}</p></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Experience (years)</label>
+                    <p className="text-sm text-white py-2 px-3 rounded-xl bg-white/5 border border-white/10">{experience || <span className="text-slate-600">Not set</span>}</p></div>
+                  <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Max Sessions/Day</label>
+                    <Input type="number" placeholder="20" value={maxSessions} onChange={(e) => setMaxSessions(e.target.value)} /></div>
+                </div>
+                <Button onClick={saveProfile} disabled={saving} className="w-full">
+                  <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Max Sessions"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Display Name</label>
+                  <Input placeholder="Dr. Priya Sharma" value={name} onChange={(e) => setName(e.target.value)} /></div>
+                <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Qualifications (comma separated)</label>
+                  <Input placeholder="MBBS, MD, DNB" value={qualifications} onChange={(e) => setQualifications(e.target.value)} /></div>
+                <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Bio / About</label>
+                  <textarea className="w-full p-3 rounded-xl border bg-transparent text-sm min-h-[120px]" placeholder="Tell patients about your experience..." value={bio} onChange={(e) => setBio(e.target.value)} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Experience (years)</label>
+                    <Input type="number" placeholder="8" value={experience} onChange={(e) => setExperience(e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-slate-400 mb-1 block">Max Sessions/Day</label>
+                    <Input type="number" placeholder="20" value={maxSessions} onChange={(e) => setMaxSessions(e.target.value)} /></div>
+                </div>
+                <Button onClick={saveProfile} disabled={saving} className="w-full">
+                  <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Profile"}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
