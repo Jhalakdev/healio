@@ -1,31 +1,38 @@
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Linking } from 'react-native';
 import { colors } from '../../lib/theme';
-import { clearTokens } from '../../lib/api';
+import { clearTokens, api } from '../../lib/api';
 
 const menuItems = [
   { icon: 'person-circle-outline' as const, label: 'My Profile', route: '/(patient)/my-profile' },
-  { icon: 'wallet-outline' as const, label: 'Wallet', route: '/(patient)/wallet' },
+  { icon: 'wallet-outline' as const, label: 'Payments History', route: '/(patient)/wallet' },
   { icon: 'calendar-outline' as const, label: 'Booking History', route: '/(patient)/appointments' },
   { icon: 'people-outline' as const, label: 'Family Members', route: '/(patient)/family-members' },
   { icon: 'heart-outline' as const, label: 'Favourite Doctors', route: '/(patient)/doctors' },
+  { icon: 'flask-outline' as const, label: 'Test Reports', route: '/(patient)/lab-tests' },
   { icon: 'pricetags-outline' as const, label: 'Plans & Pricing', route: '/(patient)/plans' },
-  { icon: 'flask-outline' as const, label: 'Lab Tests', route: '/(patient)/lab-tests' },
-  { icon: 'help-circle-outline' as const, label: 'FAQ', route: '/(patient)/faq' },
+  { icon: 'help-circle-outline' as const, label: 'Frequently Asked Questions', route: '/(patient)/faq' },
   { icon: 'document-outline' as const, label: 'Terms & Conditions', route: '/(patient)/content-page?slug=terms' },
   { icon: 'shield-checkmark-outline' as const, label: 'Privacy Policy', route: '/(patient)/content-page?slug=privacy' },
   { icon: 'information-circle-outline' as const, label: 'About Us', route: '/(patient)/content-page?slug=about' },
 ];
 
 export default function MoreTab() {
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    api('/users/me').then((p: any) => setName(p?.name || '')).catch(() => {});
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.welcomeText}>Welcome Back</Text>
-          <Text style={styles.headerTitle}>More</Text>
+          <Text style={styles.headerTitle}>{name || 'More'}</Text>
         </View>
         <View style={styles.headerRight}>
           <Pressable style={styles.iconBtn} onPress={() => router.push('/(patient)/notifications')}>

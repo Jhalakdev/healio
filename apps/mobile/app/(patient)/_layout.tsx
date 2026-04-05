@@ -21,42 +21,53 @@ export default function PatientLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
+      {/* ── 4 VISIBLE TABS (matching Figma design) ── */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="doctors"
         options={{
           title: 'Doctors',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="people" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="booking"
         options={{
           title: 'Messages',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'More',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="grid" size={22} color={color} />,
         }}
       />
+
+      {/* ── HIDDEN SCREENS (accessible via navigation, not shown in tab bar) ── */}
+      <Tabs.Screen name="doctor-profile" options={{ href: null }} />
+      <Tabs.Screen name="booking-confirm" options={{ href: null }} />
+      <Tabs.Screen name="booking-success" options={{ href: null }} />
+      <Tabs.Screen name="rate-doctor" options={{ href: null }} />
+      <Tabs.Screen name="video-call" options={{ href: null }} />
+      <Tabs.Screen name="appointments" options={{ href: null }} />
+      <Tabs.Screen name="wallet" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="plans" options={{ href: null }} />
+      <Tabs.Screen name="lab-tests" options={{ href: null }} />
+      <Tabs.Screen name="my-profile" options={{ href: null }} />
+      <Tabs.Screen name="edit-profile" options={{ href: null }} />
+      <Tabs.Screen name="family-members" options={{ href: null }} />
+      <Tabs.Screen name="switch-profile" options={{ href: null }} />
+      <Tabs.Screen name="faq" options={{ href: null }} />
+      <Tabs.Screen name="content-page" options={{ href: null }} />
     </Tabs>
   );
 }
