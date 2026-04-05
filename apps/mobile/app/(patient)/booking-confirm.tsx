@@ -67,8 +67,8 @@ export default function BookingConfirmScreen() {
     return d.toISOString();
   })();
 
-  const consultFee = Number(doctor?.consultationFee || 0);
-  const total = consultFee; // Backend applies coupon discount during booking
+  // Plan-based pricing — no per-doctor fee. Backend deducts from patient's plan.
+  const isPlanBased = true; // All consultations are plan-based
   const balance = Number(wallet?.balance || 0);
   const hasSufficientBalance = balance >= total;
 
@@ -247,58 +247,9 @@ export default function BookingConfirmScreen() {
           </View>
         </View>
 
-        {/* Payment */}
+        {/* Coupon */}
         <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Payment</Text>
-
-          <Pressable
-            style={[styles.paymentOption, paymentMethod === 'wallet' && styles.paymentOptionActive]}
-            onPress={() => setPaymentMethod('wallet')}
-          >
-            <View style={styles.paymentLeft}>
-              <View style={[styles.radioOuter, paymentMethod === 'wallet' && styles.radioOuterActive]}>
-                {paymentMethod === 'wallet' && <View style={styles.radioInner} />}
-              </View>
-              <View style={styles.walletIcon}>
-                <Ionicons name="wallet" size={20} color={colors.primary} />
-              </View>
-              <View>
-                <Text style={styles.paymentLabel}>BlinkCure Wallet</Text>
-                <Text style={styles.paymentSub}>Balance: ₹{balance.toLocaleString('en-IN')}</Text>
-              </View>
-            </View>
-            {hasSufficientBalance ? (
-              <View style={styles.sufficientBadge}>
-                <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                <Text style={styles.sufficientText}>Sufficient</Text>
-              </View>
-            ) : (
-              <View style={[styles.sufficientBadge, { backgroundColor: '#fef2f2' }]}>
-                <Ionicons name="alert-circle" size={14} color="#ef4444" />
-                <Text style={[styles.sufficientText, { color: '#ef4444' }]}>Low</Text>
-              </View>
-            )}
-          </Pressable>
-
-          <Pressable
-            style={[styles.paymentOption, paymentMethod === 'gateway' && styles.paymentOptionActive]}
-            onPress={() => setPaymentMethod('gateway')}
-          >
-            <View style={styles.paymentLeft}>
-              <View style={[styles.radioOuter, paymentMethod === 'gateway' && styles.radioOuterActive]}>
-                {paymentMethod === 'gateway' && <View style={styles.radioInner} />}
-              </View>
-              <View style={styles.walletIcon}>
-                <Ionicons name="card" size={20} color="#7c3aed" />
-              </View>
-              <View>
-                <Text style={styles.paymentLabel}>Pay Online</Text>
-                <Text style={styles.paymentSub}>UPI · Wallet</Text>
-              </View>
-            </View>
-          </Pressable>
-
-          {/* Coupon */}
+          <Text style={styles.sectionTitle}>Have a Coupon?</Text>
           {!showCouponInput ? (
             <Pressable style={styles.couponRow} onPress={() => setShowCouponInput(true)}>
               <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
@@ -326,32 +277,30 @@ export default function BookingConfirmScreen() {
           )}
         </View>
 
-        {/* Price breakdown */}
+        {/* Plan-based pricing info */}
         <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Price Summary</Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Consultation Fee</Text>
-            <Text style={styles.priceValue}>₹{consultFee.toLocaleString('en-IN')}</Text>
+          <Text style={styles.sectionTitle}>Payment Info</Text>
+          <View style={styles.planInfoBox}>
+            <Ionicons name="shield-checkmark" size={20} color="#10b981" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.planInfoTitle}>Plan-Based Consultation</Text>
+              <Text style={styles.planInfoSub}>This consultation will be deducted from your active plan. No extra charges.</Text>
+            </View>
           </View>
           {couponApplied && (
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Coupon ({couponCode})</Text>
-              <Text style={[styles.priceValue, styles.priceGreen]}>Applied at checkout</Text>
+              <Text style={[styles.priceValue, styles.priceGreen]}>Applied</Text>
             </View>
           )}
-          <View style={styles.totalDivider} />
-          <View style={styles.priceRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>₹{total.toLocaleString('en-IN')}</Text>
-          </View>
         </View>
       </ScrollView>
 
       {/* Swipe to confirm */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomInfo}>
-          <Text style={styles.bottomTotal}>₹{total}</Text>
-          <Text style={styles.bottomSub}>via {paymentMethod === 'wallet' ? 'Wallet' : 'Online'}</Text>
+          <Ionicons name="shield-checkmark" size={20} color="#10b981" />
+          <Text style={styles.bottomSub}>Via Plan</Text>
         </View>
 
         <Animated.View style={[styles.slider, { backgroundColor: bgColor }]}>
@@ -488,6 +437,9 @@ const styles = StyleSheet.create({
   priceLabel: { fontSize: 13, color: colors.gray500 },
   priceValue: { fontSize: 13, fontWeight: '600', color: colors.text },
   priceGreen: { color: '#10b981' },
+  planInfoBox: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#f0fdf4', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#bbf7d0' },
+  planInfoTitle: { fontSize: 14, fontWeight: '700', color: '#166534' },
+  planInfoSub: { fontSize: 12, color: '#15803d', marginTop: 2, lineHeight: 18 },
   totalDivider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 8 },
   totalLabel: { fontSize: 16, fontWeight: '800', color: colors.text },
   totalValue: { fontSize: 18, fontWeight: '800', color: colors.primary },

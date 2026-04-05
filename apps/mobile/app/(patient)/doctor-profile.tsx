@@ -161,8 +161,8 @@ export default function DoctorProfileScreen() {
             <Text style={styles.statLabel}>Rating</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>₹{Number(doctor.consultationFee || 0)}</Text>
-            <Text style={styles.statLabel}>Fee</Text>
+            <Text style={styles.statValue}>{doctor.avgResponseMin ? `${doctor.avgResponseMin}m` : '< 5m'}</Text>
+            <Text style={styles.statLabel}>Response</Text>
           </View>
         </View>
 

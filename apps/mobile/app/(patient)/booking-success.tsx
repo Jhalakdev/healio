@@ -100,7 +100,7 @@ export default function BookingSuccessScreen() {
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Ionicons name="wallet" size={16} color={colors.primary} />
-            <Text style={styles.summaryText}>₹{Number(amount || 0).toLocaleString('en-IN')} paid via {paymentMethod === 'wallet' ? 'Wallet' : 'Online'}</Text>
+            <Text style={styles.summaryText}>Paid via Active Plan</Text>
           </View>
           {bookingId && (
             <>

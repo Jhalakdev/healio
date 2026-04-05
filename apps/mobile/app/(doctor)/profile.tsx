@@ -53,7 +53,7 @@ export default function DoctorProfileScreen() {
         <View style={styles.profileStats}>
           <View style={styles.profileStat}><Text style={styles.profileStatValue}>{profile?.experience || 0}</Text><Text style={styles.profileStatLabel}>Years Exp</Text></View>
           <View style={styles.profileStatDivider} />
-          <View style={styles.profileStat}><Text style={styles.profileStatValue}>₹{Number(profile?.consultationFee || 0)}</Text><Text style={styles.profileStatLabel}>Fee</Text></View>
+          <View style={styles.profileStat}><Text style={styles.profileStatValue}>{profile?._count?.bookings || 0}</Text><Text style={styles.profileStatLabel}>Consults</Text></View>
           <View style={styles.profileStatDivider} />
           <View style={styles.profileStat}><Text style={styles.profileStatValue}>{profile?.maxSessionsPerDay || 20}</Text><Text style={styles.profileStatLabel}>Max/Day</Text></View>
         </View>
