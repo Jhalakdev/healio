@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { adminApi } from "@/lib/admin-api";
 
-const API = "http://localhost:3000";
+const API = process.env.NEXT_PUBLIC_API_URL || "";
 
 const requiredDocs = [
   { type: "mbbs_certificate", label: "MBBS Certificate", required: true },

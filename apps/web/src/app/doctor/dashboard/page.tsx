@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { adminApi } from "@/lib/admin-api";
 import { getIcon } from "@/lib/icon-map";
 
-const API = "http://localhost:3000";
+const API = process.env.NEXT_PUBLIC_API_URL || "";
 const statusColor: Record<string, string> = {
   PENDING: "warning", CONFIRMED: "default", IN_PROGRESS: "online",
   COMPLETED: "success", CANCELLED: "destructive",
