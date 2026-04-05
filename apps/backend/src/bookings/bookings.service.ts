@@ -200,7 +200,7 @@ export class BookingsService {
 
     // Notify doctor about new booking
     try {
-      const doctorUserId = booking.doctor?.userId || (await this.prisma.doctor.findUnique({ where: { id: booking.doctorId }, select: { userId: true } }))?.userId;
+      const doctorUserId = (await this.prisma.doctor.findUnique({ where: { id: booking.doctorId }, select: { userId: true } }))?.userId;
       if (doctorUserId) {
         await this.notificationsService.create({
           userId: doctorUserId,
