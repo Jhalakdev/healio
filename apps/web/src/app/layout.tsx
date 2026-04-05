@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Healio — Instant Doctor Consultations",
+  title: "BlinkCure — Instant Doctor Consultations",
   description:
     "Connect with verified doctors instantly via HD video. Secure, affordable telemedicine for everyone.",
   keywords: ["telemedicine", "doctor consultation", "video call", "healthcare", "India"],

@@ -118,7 +118,7 @@ export default function BookingSuccessScreen() {
         <View style={styles.nextCard}>
           <Text style={styles.nextTitle}>What happens next?</Text>
           {[
-            { icon: 'notifications-outline' as const, text: "You'll get a reminder 15 minutes before" },
+            { icon: 'notifications-outline' as const, text: "You'll get a reminder before your appointment" },
             { icon: 'document-text-outline' as const, text: 'Upload any reports before the consultation' },
             { icon: 'videocam-outline' as const, text: 'Join the video call at your scheduled time' },
           ].map((item, i) => (

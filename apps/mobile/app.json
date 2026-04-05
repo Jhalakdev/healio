@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Healio",
-    "slug": "healio",
+    "name": "BlinkCure",
+    "slug": "blinkcure",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "healio",
+    "scheme": "blinkcure",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",

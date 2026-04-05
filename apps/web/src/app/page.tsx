@@ -44,7 +44,7 @@ export default function LandingPage() {
               <HeartPulse className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight">
-              Heal<span className="gradient-text">io</span>
+              Blink<span className="gradient-text">Cure</span>
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -341,7 +341,7 @@ export default function LandingPage() {
                   Grow your practice.<br />See patients online.
                 </h2>
                 <p className="text-lg text-white/80 mb-8 max-w-lg leading-relaxed">
-                  Join Healio and reach thousands of patients from the comfort of
+                  Join BlinkCure and reach thousands of patients from the comfort of
                   your clinic or home. Set your own schedule, earn per
                   consultation, and focus on what you do best.
                 </p>
@@ -455,7 +455,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
                   <HeartPulse className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-lg font-bold">Healio</span>
+                <span className="text-lg font-bold">BlinkCure</span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">
                 Making quality healthcare accessible to every Indian through technology.
@@ -479,7 +479,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="mt-12 pt-8 border-t border-slate-200/60 text-center text-sm text-slate-400">
-            &copy; {new Date().getFullYear()} Healio Technologies Pvt. Ltd. All rights reserved.
+            &copy; {new Date().getFullYear()} Web Accuracy Pvt. Ltd. All rights reserved.
           </div>
         </div>
       </footer>

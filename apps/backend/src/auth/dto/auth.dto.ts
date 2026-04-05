@@ -21,7 +21,7 @@ export class VerifyOtpDto {
 }
 
 export class DoctorRegisterDto {
-  @ApiProperty({ example: 'doctor@healio.in' })
+  @ApiProperty({ example: 'doctor@blinkcure.com' })
   @IsEmail()
   email: string;
 
@@ -37,7 +37,7 @@ export class DoctorRegisterDto {
 }
 
 export class DoctorLoginDto {
-  @ApiProperty({ example: 'doctor@healio.in' })
+  @ApiProperty({ example: 'doctor@blinkcure.com' })
   @IsEmail()
   email: string;
 
@@ -47,7 +47,7 @@ export class DoctorLoginDto {
 }
 
 export class AdminLoginDto {
-  @ApiProperty({ example: 'admin@healio.in' })
+  @ApiProperty({ example: 'admin@blinkcure.com' })
   @IsEmail()
   email: string;
 

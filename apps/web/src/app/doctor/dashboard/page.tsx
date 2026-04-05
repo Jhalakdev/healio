@@ -234,7 +234,7 @@ export default function DoctorDashboardHome() {
             <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mb-8 shadow-2xl shadow-teal-500/30">
               <Stethoscope className="w-14 h-14 text-white" />
             </div>
-            <h1 className="text-5xl font-extrabold mb-4">Welcome to Healio!</h1>
+            <h1 className="text-5xl font-extrabold mb-4">Welcome to BlinkCure!</h1>
             <p className="text-xl text-slate-400 max-w-md mb-10">Let&apos;s set up your doctor profile. Takes about 2 minutes.</p>
             <Button size="lg" className="text-lg px-10 py-6 rounded-2xl" onClick={() => setStep(1)}>
               Let&apos;s Get Started <ArrowRight className="w-5 h-5" />
@@ -393,7 +393,7 @@ export default function DoctorDashboardHome() {
       <Card className="border-blue-500/20 bg-blue-500/5">
         <CardContent className="p-4 flex items-center gap-3">
           <Video className="w-5 h-5 text-blue-400 shrink-0" />
-          <p className="text-sm text-slate-300"><strong className="text-blue-300">Video calls are on the mobile app.</strong> Use same credentials on the Healio app to accept calls.</p>
+          <p className="text-sm text-slate-300"><strong className="text-blue-300">Video calls are on the mobile app.</strong> Use same credentials on the BlinkCure app to accept calls.</p>
         </CardContent>
       </Card>
 

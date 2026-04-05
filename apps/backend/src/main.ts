@@ -24,7 +24,7 @@ async function bootstrap() {
 
   // Swagger
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Healio API')
+    .setTitle('BlinkCure API')
     .setDescription('Telehealth Platform API')
     .setVersion('1.0')
     .addBearerAuth()
@@ -34,7 +34,7 @@ async function bootstrap() {
 
   const port = config.get<number>('PORT', 3000);
   await app.listen(port);
-  console.log(`🚀 Healio API running on http://localhost:${port}`);
+  console.log(`🚀 BlinkCure API running on http://localhost:${port}`);
   console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
 }
 

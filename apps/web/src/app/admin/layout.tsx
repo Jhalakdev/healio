@@ -71,7 +71,7 @@ export default function AdminLayout({
           </div>
           {!collapsed && (
             <div>
-              <span className="text-lg font-bold tracking-tight text-white">Healio</span>
+              <span className="text-lg font-bold tracking-tight text-white">BlinkCure</span>
               <span className="text-[10px] bg-teal-500/20 text-teal-400 px-1.5 py-0.5 rounded-md font-semibold ml-2">
                 ADMIN
               </span>

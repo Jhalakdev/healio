@@ -132,7 +132,9 @@ export class BookingsService {
         where: { id: dto.forMemberId },
       });
       if (member && member.isChild) {
-        const childDiscount = amountToCharge.mul(new Decimal(0.10)); // 10%
+        const childDiscountConfig = await this.prisma.appConfig.findUnique({ where: { key: 'child_discount_percent' } });
+        const childDiscountPct = childDiscountConfig?.value ? Number(childDiscountConfig.value) : 10;
+        const childDiscount = amountToCharge.mul(new Decimal(childDiscountPct / 100));
         discount = discount.add(childDiscount);
         amountToCharge = amountToCharge.sub(childDiscount);
         if (amountToCharge.lessThan(0)) amountToCharge = new Decimal(0);
@@ -217,13 +219,14 @@ export class BookingsService {
       await this.bookingQueue.add(
         'auto-cancel',
         { bookingId: booking.id },
-        { delay: 60000 }, // 60 seconds
+        { delay: this.config.get<number>('AUTO_CANCEL_DELAY_MS', 60000) },
       );
     }
 
     // Schedule no-show check for scheduled bookings
     if (dto.mode === 'SCHEDULED' && dto.scheduledAt) {
-      const delay = scheduledAt.getTime() - Date.now() + 5 * 60 * 1000; // 5 min after scheduled time
+      const noShowDelayMin = this.config.get<number>('NO_SHOW_CHECK_DELAY_MIN', 5);
+      const delay = scheduledAt.getTime() - Date.now() + noShowDelayMin * 60 * 1000;
       if (delay > 0) {
         await this.bookingQueue.add(
           'no-show-check',
@@ -477,8 +480,10 @@ export class BookingsService {
 
     await this.redis.clearActiveSession(booking.doctorId, booking.id);
 
-    // Revenue split: 70% doctor, 30% platform
-    const doctorShare = booking.amountCharged.mul(new Decimal(0.7));
+    // Revenue split: configurable doctor/platform share
+    const commConfig = await this.prisma.appConfig.findUnique({ where: { key: 'platform_commission_percent' } });
+    const platformPercent = commConfig?.value ? Number(commConfig.value) : 30;
+    const doctorShare = booking.amountCharged.mul(new Decimal((100 - platformPercent) / 100));
 
     await this.prisma.$transaction([
       this.prisma.booking.update({
@@ -498,7 +503,7 @@ export class BookingsService {
           bookingId: booking.id,
           amount: doctorShare,
           type: 'CREDIT',
-          description: 'Consultation earnings (70%)',
+          description: `Consultation earnings (${100 - platformPercent}%)`,
         },
       }),
     ]);

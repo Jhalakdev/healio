@@ -44,7 +44,7 @@ export default function DoctorWebLayout({ children }: { children: React.ReactNod
             <HeartPulse className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="text-lg font-bold text-white">Healio</span>
+            <span className="text-lg font-bold text-white">BlinkCure</span>
             <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-md font-semibold ml-2">DOCTOR</span>
           </div>
         </div>

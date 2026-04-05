@@ -297,7 +297,7 @@ export class PaymentsService {
           const payoutResult = await this.createRazorpayPayout(
             doctor.upiId!,
             amount,
-            `Healio earnings week of ${periodStart.toISOString().split('T')[0]}`,
+            `BlinkCure earnings week of ${periodStart.toISOString().split('T')[0]}`,
           );
           await this.prisma.doctorPayout.update({
             where: { id: payout.id },

@@ -20,7 +20,7 @@ export default function Welcome() {
           <View style={styles.logoCircle}>
             <Ionicons name="heart-outline" size={48} color={colors.white} />
           </View>
-          <Text style={styles.logoText}>Healio</Text>
+          <Text style={styles.logoText}>BlinkCure</Text>
           <Text style={styles.tagline}>Your doctor, one tap away</Text>
         </View>
 

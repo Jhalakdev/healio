@@ -508,7 +508,8 @@ export class DoctorsService {
 
   async getBookingsByDate(userId: string, date?: string, range?: 'today' | 'yesterday' | 'tomorrow' | 'week') {
     const doctor = await this.getDoctorByUserId(userId);
-    const commissionPercent = 30; // platform takes 30%
+    const commConfig = await this.prisma.appConfig.findUnique({ where: { key: 'platform_commission_percent' } });
+    const commissionPercent = commConfig?.value ? Number(commConfig.value) : 30;
 
     let startDate: Date;
     let endDate: Date;

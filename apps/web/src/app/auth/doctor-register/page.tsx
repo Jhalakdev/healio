@@ -124,11 +124,11 @@ export default function DoctorRegisterPage() {
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
               <HeartPulse className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">Healio</span>
+            <span className="text-2xl font-bold text-white">BlinkCure</span>
           </Link>
           <div>
             <h1 className="text-4xl font-extrabold text-white leading-tight mb-4">
-              Join Healio as a Doctor
+              Join BlinkCure as a Doctor
             </h1>
             <p className="text-lg text-white/70 leading-relaxed mb-6">
               Reach thousands of patients. Set your schedule. Earn per consultation.
@@ -143,7 +143,7 @@ export default function DoctorRegisterPage() {
               ))}
             </div>
           </div>
-          <p className="text-sm text-white/40">&copy; {new Date().getFullYear()} Healio — Web Accuracy Pvt. Ltd.</p>
+          <p className="text-sm text-white/40">&copy; {new Date().getFullYear()} BlinkCure — Web Accuracy Pvt. Ltd.</p>
         </div>
       </div>
 

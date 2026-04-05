@@ -146,10 +146,11 @@ export default function BookingConfirmScreen() {
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
   if (!doctor) return <View style={styles.loadingWrap}><Text style={{ color: colors.gray400 }}>Doctor not found</Text></View>;
 
+  const durationMin = 15; // TODO: fetch from backend config
   const dateObj = new Date(scheduledAt);
   const dateStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const endTime = new Date(dateObj.getTime() + 15 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const endTime = new Date(dateObj.getTime() + durationMin * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const initials = doctor.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'D';
   const categories = doctor.categories?.map((c: any) => c.category?.name).filter(Boolean) || [doctor.specialization || 'General'];
 
@@ -194,7 +195,7 @@ export default function BookingConfirmScreen() {
           {[
             { icon: 'calendar-outline' as const, label: 'Date', value: dateStr },
             { icon: 'time-outline' as const, label: 'Time', value: `${timeStr} — ${endTime}` },
-            { icon: 'hourglass-outline' as const, label: 'Duration', value: '15 minutes' },
+            { icon: 'hourglass-outline' as const, label: 'Duration', value: `${durationMin} minutes` },
             { icon: 'videocam-outline' as const, label: 'Type', value: 'Video Consultation' },
           ].map((item) => (
             <View key={item.label} style={styles.detailRow}>
@@ -260,7 +261,7 @@ export default function BookingConfirmScreen() {
                 <Ionicons name="wallet" size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={styles.paymentLabel}>Healio Wallet</Text>
+                <Text style={styles.paymentLabel}>BlinkCure Wallet</Text>
                 <Text style={styles.paymentSub}>Balance: ₹{balance.toLocaleString('en-IN')}</Text>
               </View>
             </View>

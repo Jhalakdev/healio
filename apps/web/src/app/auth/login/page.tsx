@@ -86,7 +86,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <HeartPulse className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">Healio</span>
+            <span className="text-2xl font-bold text-white tracking-tight">BlinkCure</span>
           </Link>
           <div className="space-y-8">
             <h1 className="text-5xl font-extrabold text-white leading-tight">
@@ -97,7 +97,7 @@ export default function LoginPage() {
               Manage doctors, patients, bookings, and revenue from one powerful dashboard.
             </p>
           </div>
-          <p className="text-sm text-white/40">&copy; {new Date().getFullYear()} Healio — Web Accuracy Pvt. Ltd.</p>
+          <p className="text-sm text-white/40">&copy; {new Date().getFullYear()} BlinkCure — Web Accuracy Pvt. Ltd.</p>
         </div>
       </div>
 
@@ -148,7 +148,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
-                    placeholder="admin@healio.in"
+                    placeholder="admin@blinkcure.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-11"
@@ -184,7 +184,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
-                    placeholder="doctor@healio.in"
+                    placeholder="doctor@blinkcure.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-11"
@@ -213,22 +213,22 @@ export default function LoginPage() {
           <div className="mt-6 space-y-2">
             <p className="text-center text-[10px] text-slate-500 uppercase">Quick Login (Dev)</p>
             {tab === "admin" ? (
-              <button onClick={() => { setEmail("admin@healio.in"); setPassword("admin123"); }}
+              <button onClick={() => { setEmail("admin@blinkcure.com"); setPassword("admin123"); }}
                 className="w-full text-left px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors text-sm">
                 <span className="font-bold text-slate-700">Admin</span>
-                <span className="text-slate-400 ml-2">admin@healio.in / admin123</span>
+                <span className="text-slate-400 ml-2">admin@blinkcure.com / admin123</span>
               </button>
             ) : (
               <>
-                <button onClick={() => { setEmail("doctor@healio.in"); setPassword("doctor123"); }}
+                <button onClick={() => { setEmail("doctor@blinkcure.com"); setPassword("doctor123"); }}
                   className="w-full text-left px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors text-sm">
                   <span className="font-bold text-emerald-700">Approved Doctor</span>
-                  <span className="text-emerald-500 ml-2">doctor@healio.in</span>
+                  <span className="text-emerald-500 ml-2">doctor@blinkcure.com</span>
                 </button>
-                <button onClick={() => { setEmail("newdoctor@healio.in"); setPassword("test123"); }}
+                <button onClick={() => { setEmail("newdoctor@blinkcure.com"); setPassword("test123"); }}
                   className="w-full text-left px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors text-sm">
                   <span className="font-bold text-amber-700">New Doctor (Not Approved)</span>
-                  <span className="text-amber-500 ml-2">newdoctor@healio.in</span>
+                  <span className="text-amber-500 ml-2">newdoctor@blinkcure.com</span>
                 </button>
               </>
             )}
