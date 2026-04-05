@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,10 +13,21 @@ const gradients: [string, string][] = [
 export default function PlansScreen() {
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    await api('/plans').then(setPlans).catch(() => {});
+  }, []);
 
   useEffect(() => {
-    api('/plans').then(setPlans).catch(() => {}).finally(() => setLoading(false));
+    loadData().finally(() => setLoading(false));
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
@@ -27,7 +38,7 @@ export default function PlansScreen() {
         <Text style={styles.headerTitle}>Choose a Plan</Text>
         <View style={{ width: 24 }} />
       </View>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
         {plans.map((plan: any, i: number) => (
           <Pressable key={plan.id} style={styles.cardWrap}>
             <LinearGradient colors={gradients[i % gradients.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>

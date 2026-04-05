@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,20 +7,25 @@ import {
   StyleSheet,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fontSize, spacing, radius } from '../../lib/theme';
+import { api } from '../../lib/api';
 
 const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
 const ratingEmojis = ['', '😞', '😐', '🙂', '😊', '🤩'];
 
 export default function RateDoctor() {
+  const { bookingId, doctorName } = useLocalSearchParams<{ bookingId: string; doctorName: string }>();
+
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const quickTags = [
     'Very professional',
@@ -38,14 +43,30 @@ export default function RateDoctor() {
     );
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (rating === 0) return Alert.alert('Please select a rating');
-    const fullComment = [
-      ...selectedTags.map((t) => `✓ ${t}`),
-      comment,
-    ].filter(Boolean).join('\n');
-    // In production: api('/reviews/BOOKING_ID', { method: 'POST', body: ... })
-    setSubmitted(true);
+    if (!bookingId) return Alert.alert('Error', 'No booking ID provided');
+
+    setSubmitting(true);
+    try {
+      const fullComment = [
+        ...selectedTags.map((t) => `✓ ${t}`),
+        comment,
+      ].filter(Boolean).join('\n');
+
+      await api(`/reviews/${bookingId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          rating,
+          comment: fullComment || undefined,
+          isAnonymous,
+        }),
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to submit review');
+    }
+    setSubmitting(false);
   };
 
   if (submitted) {
@@ -76,7 +97,7 @@ export default function RateDoctor() {
       <View style={styles.header}>
         <Text style={styles.title}>Rate your experience</Text>
         <Text style={styles.subtitle}>
-          How was your consultation with Dr. Priya Sharma?
+          How was your consultation with {doctorName || 'the doctor'}?
         </Text>
       </View>
 
@@ -158,8 +179,12 @@ export default function RateDoctor() {
 
       {/* Submit */}
       {rating > 0 && (
-        <Pressable style={styles.submitBtn} onPress={submit}>
-          <Text style={styles.submitBtnText}>Submit Review</Text>
+        <Pressable style={[styles.submitBtn, submitting && { opacity: 0.6 }]} onPress={submit} disabled={submitting}>
+          {submitting ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.submitBtnText}>Submit Review</Text>
+          )}
         </Pressable>
       )}
     </View>

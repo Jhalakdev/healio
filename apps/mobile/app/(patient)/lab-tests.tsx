@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
@@ -30,14 +30,25 @@ export default function LabTestsScreen() {
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
+  const loadData = useCallback(async () => {
+    await Promise.all([
       api('/lab-tests/categories').then(setCategories).catch(() => []),
       api('/lab-tests/tests').then(setTests).catch(() => []),
       api('/lab-tests/packages').then(setPackages).catch(() => []),
-    ]).finally(() => setLoading(false));
+    ]);
   }, []);
+
+  useEffect(() => {
+    loadData().finally(() => setLoading(false));
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   const filtered = selectedCat
     ? tests.filter((t: any) => t.category === selectedCat)
@@ -48,7 +59,7 @@ export default function LabTestsScreen() {
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}><Ionicons name="chevron-back" size={24} color={colors.text} /></Pressable>
         <Text style={styles.headerTitle}>Health Packages</Text>
@@ -97,7 +108,17 @@ export default function LabTestsScreen() {
           <View style={styles.testRight}>
             <Text style={styles.testMrp}>₹{Number(test.mrp).toLocaleString('en-IN')}</Text>
             <Text style={styles.testPrice}>₹{Number(test.sellingPrice).toLocaleString('en-IN')}</Text>
-            <Pressable style={styles.addBtn}><Text style={styles.addBtnText}>Book</Text></Pressable>
+            <Pressable style={styles.addBtn} onPress={() => {
+              Alert.alert('Book Lab Test', `Book ${test.name} for ₹${Number(test.sellingPrice).toLocaleString('en-IN')}?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Book Now', onPress: async () => {
+                  try {
+                    await api('/lab-tests/order', { method: 'POST', body: JSON.stringify({ testIds: [test.id], collectionAddress: 'Home' }) });
+                    Alert.alert('Success', 'Lab test booked! You will receive collection details soon.');
+                  } catch (err: any) { Alert.alert('Error', err.message || 'Failed to book'); }
+                }},
+              ]);
+            }}><Text style={styles.addBtnText}>Book</Text></Pressable>
           </View>
         </Pressable>
       ))}

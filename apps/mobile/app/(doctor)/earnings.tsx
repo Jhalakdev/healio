@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,11 +17,24 @@ export default function EarningsScreen() {
   const [data, setData] = useState<any>({ bookings: [], summary: {} });
   const [payouts, setPayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    await Promise.all([
+      api(`/doctors/me/bookings-by-date?range=${activeRange}`).then(setData).catch(() => {}),
+      api('/doctors/me/payouts').then(setPayouts).catch(() => []),
+    ]);
+  }, [activeRange]);
 
   useEffect(() => {
-    api(`/doctors/me/bookings-by-date?range=${activeRange}`).then(setData).catch(() => {}).finally(() => setLoading(false));
-    api('/doctors/me/payouts').then(setPayouts).catch(() => []);
+    loadData().finally(() => setLoading(false));
   }, [activeRange]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   const s = data.summary || {};
 
@@ -35,7 +48,7 @@ export default function EarningsScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
         {/* Earnings card */}
         <LinearGradient colors={['#0d9488', '#059669']} style={styles.earningsCard}>
           <Text style={styles.earningsLabel}>Net Earnings (after {s.commissionPercent || 30}% commission)</Text>

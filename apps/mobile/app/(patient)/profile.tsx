@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Linking } from 'react-native';
 import { colors } from '../../lib/theme';
 import { clearTokens } from '../../lib/api';
 
@@ -9,13 +10,13 @@ const menuItems = [
   { icon: 'wallet-outline' as const, label: 'Wallet', route: '/(patient)/wallet' },
   { icon: 'calendar-outline' as const, label: 'Booking History', route: '/(patient)/appointments' },
   { icon: 'people-outline' as const, label: 'Family Members', route: '/(patient)/family-members' },
-  { icon: 'heart-outline' as const, label: 'Favourite Doctors', route: null },
+  { icon: 'heart-outline' as const, label: 'Favourite Doctors', route: '/(patient)/doctors' },
   { icon: 'pricetags-outline' as const, label: 'Plans & Pricing', route: '/(patient)/plans' },
-  { icon: 'settings-outline' as const, label: 'General Settings', route: null },
-  { icon: 'help-circle-outline' as const, label: 'FAQ', route: null },
-  { icon: 'document-outline' as const, label: 'Terms & Conditions', route: null },
-  { icon: 'shield-checkmark-outline' as const, label: 'Privacy Policy', route: null },
-  { icon: 'information-circle-outline' as const, label: 'About Us', route: null },
+  { icon: 'flask-outline' as const, label: 'Lab Tests', route: '/(patient)/lab-tests' },
+  { icon: 'help-circle-outline' as const, label: 'FAQ', route: '/(patient)/faq' },
+  { icon: 'document-outline' as const, label: 'Terms & Conditions', route: '/(patient)/content-page?slug=terms' },
+  { icon: 'shield-checkmark-outline' as const, label: 'Privacy Policy', route: '/(patient)/content-page?slug=privacy' },
+  { icon: 'information-circle-outline' as const, label: 'About Us', route: '/(patient)/content-page?slug=about' },
 ];
 
 export default function MoreTab() {
@@ -27,10 +28,7 @@ export default function MoreTab() {
           <Text style={styles.headerTitle}>More</Text>
         </View>
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconBtn}>
-            <Ionicons name="search-outline" size={20} color={colors.text} />
-          </Pressable>
-          <Pressable style={styles.iconBtn}>
+          <Pressable style={styles.iconBtn} onPress={() => router.push('/(patient)/notifications')}>
             <Ionicons name="notifications-outline" size={20} color={colors.text} />
           </Pressable>
         </View>
@@ -41,7 +39,7 @@ export default function MoreTab() {
           <Pressable
             key={item.label}
             style={styles.menuItem}
-            onPress={() => item.route && router.push(item.route as any)}
+            onPress={() => router.push(item.route as any)}
           >
             <View style={styles.menuIcon}>
               <Ionicons name={item.icon} size={22} color={colors.primary} />
@@ -59,13 +57,12 @@ export default function MoreTab() {
           <Text style={styles.logoutText}>Logout</Text>
         </Pressable>
 
-        {/* Branding */}
         <View style={styles.branding}>
           <Text style={styles.brandingText}>Developed by</Text>
-          <Pressable onPress={() => {/* Linking.openURL('https://webaccuracy.com') */}}>
+          <Pressable onPress={() => Linking.openURL('https://webaccuracy.com')}>
             <Text style={styles.brandingLink}>@webaccuracy</Text>
           </Pressable>
-          <Text style={styles.brandingVenture}>Healio — a venture of Web Accuracy Pvt. Ltd.</Text>
+          <Text style={styles.brandingVenture}>BlinkCure — a venture of Web Accuracy Pvt. Ltd.</Text>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
       </ScrollView>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
@@ -31,13 +31,24 @@ export default function DoctorsTab() {
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
+  const loadData = useCallback(async () => {
+    await Promise.all([
       api('/categories').then(setCategories).catch(() => []),
       api('/doctors').then(setDoctors).catch(() => []),
-    ]).finally(() => setLoading(false));
+    ]);
   }, []);
+
+  useEffect(() => {
+    loadData().finally(() => setLoading(false));
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -50,7 +61,7 @@ export default function DoctorsTab() {
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
       <View style={styles.header}>
         <Pressable style={styles.shareBtn}><Ionicons name="share-outline" size={20} color={colors.text} /></Pressable>
         <Text style={styles.headerTitle}>Find Your Doctor</Text>
@@ -84,7 +95,7 @@ export default function DoctorsTab() {
       <View style={styles.doctorsList}>
         <Text style={styles.sectionTitle}>{doctors.length} Doctor{doctors.length !== 1 ? 's' : ''} found</Text>
         {doctors.map((doc: any) => (
-          <Pressable key={doc.id} style={styles.doctorCard} onPress={() => router.push('/(patient)/doctor-profile')}>
+          <Pressable key={doc.id} style={styles.doctorCard} onPress={() => router.push({ pathname: '/(patient)/doctor-profile', params: { doctorId: doc.id } })}>
             <View style={{ position: 'relative' }}>
               <View style={styles.docAvatar}>
                 <Text style={styles.docAvatarText}>{doc.name?.split(' ').slice(1).map((n: string) => n[0]).join('').slice(0, 2) || 'D'}</Text>
@@ -99,7 +110,7 @@ export default function DoctorsTab() {
                 <Text style={styles.ratingText}>{doc._count?.reviews || 0} reviews · {doc.experience || 0} yrs</Text>
               </View>
             </View>
-            <Pressable style={styles.bookNowBtn} onPress={() => router.push('/(patient)/doctor-profile')}>
+            <Pressable style={styles.bookNowBtn} onPress={() => router.push({ pathname: '/(patient)/doctor-profile', params: { doctorId: doc.id } })}>
               <Text style={styles.bookNowText}>Book Now</Text>
             </Pressable>
           </Pressable>

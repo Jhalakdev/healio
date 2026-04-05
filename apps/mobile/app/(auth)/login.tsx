@@ -8,11 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, spacing, radius } from '../../lib/theme';
-import { setTokens } from '../../lib/api';
+import { setTokens, api } from '../../lib/api';
 
 type LoginMode = 'phone' | 'email';
 
@@ -24,31 +25,57 @@ export default function UnifiedLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
   // Patient: phone OTP flow
-  const sendOtp = () => {
+  const sendOtp = async () => {
     if (phone.length < 10) return;
-    setOtpSent(true);
+    setLoading(true);
+    try {
+      await api('/auth/patient/send-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phone: `+91${phone}` }),
+      });
+      setOtpSent(true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to send OTP');
+    }
+    setLoading(false);
   };
 
-  const verifyOtp = () => {
+  const verifyOtp = async () => {
     const otpCode = otp.join('');
     if (otpCode.length !== 6) return;
-    // Mock: in production, call POST /auth/patient/verify-otp
-    // Backend returns { accessToken, refreshToken, isNewUser, familyPlan }
-    setTokens('mock-token-patient', 'mock-refresh');
-    router.replace('/(patient)');
+    setLoading(true);
+    try {
+      const res = await api('/auth/patient/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phone: `+91${phone}`, otp: otpCode }),
+      });
+      setTokens(res.accessToken, res.refreshToken);
+      router.replace('/(patient)');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Invalid OTP');
+    }
+    setLoading(false);
   };
 
   // Doctor: email/password flow
-  const doctorLogin = () => {
+  const doctorLogin = async () => {
     if (!email || !password) return Alert.alert('Error', 'Fill all fields');
-    // Mock: in production, call POST /auth/doctor/login
-    // Backend checks role → returns tokens
-    // If role is DOCTOR → route to doctor dashboard
-    setTokens('mock-token-doctor', 'mock-refresh');
-    router.replace('/(doctor)');
+    setLoading(true);
+    try {
+      const res = await api('/auth/doctor/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setTokens(res.accessToken, res.refreshToken);
+      router.replace('/(doctor)');
+    } catch (err: any) {
+      Alert.alert('Login Failed', err.message || 'Invalid credentials');
+    }
+    setLoading(false);
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -71,7 +98,7 @@ export default function UnifiedLogin() {
         <View style={styles.iconBg}>
           <Ionicons name="heart" size={28} color={colors.primary} />
         </View>
-        <Text style={styles.title}>Welcome to Healio</Text>
+        <Text style={styles.title}>Welcome to BlinkCure</Text>
         <Text style={styles.subtitle}>
           {mode === 'phone'
             ? 'Enter your phone number to get started'
@@ -86,14 +113,14 @@ export default function UnifiedLogin() {
           onPress={() => { setMode('phone'); setOtpSent(false); }}
         >
           <Ionicons name="call-outline" size={16} color={mode === 'phone' ? colors.white : colors.gray500} />
-          <Text style={[styles.modeBtnText, mode === 'phone' && styles.modeBtnTextActive]}>Phone</Text>
+          <Text style={[styles.modeBtnText, mode === 'phone' && styles.modeBtnTextActive]}>Patient</Text>
         </Pressable>
         <Pressable
           style={[styles.modeBtn, mode === 'email' && styles.modeBtnActive]}
           onPress={() => setMode('email')}
         >
-          <Ionicons name="mail-outline" size={16} color={mode === 'email' ? colors.white : colors.gray500} />
-          <Text style={[styles.modeBtnText, mode === 'email' && styles.modeBtnTextActive]}>Email</Text>
+          <Ionicons name="medkit-outline" size={16} color={mode === 'email' ? colors.white : colors.gray500} />
+          <Text style={[styles.modeBtnText, mode === 'email' && styles.modeBtnTextActive]}>Doctor</Text>
         </Pressable>
       </View>
 
@@ -114,9 +141,13 @@ export default function UnifiedLogin() {
               onChangeText={setPhone}
             />
           </View>
-          <Pressable style={styles.btn} onPress={sendOtp}>
-            <Text style={styles.btnText}>Send OTP</Text>
-            <Ionicons name="arrow-forward" size={20} color={colors.white} />
+          <Pressable style={[styles.btn, loading && { opacity: 0.6 }]} onPress={sendOtp} disabled={loading}>
+            {loading ? <ActivityIndicator color={colors.white} /> : (
+              <>
+                <Text style={styles.btnText}>Send OTP</Text>
+                <Ionicons name="arrow-forward" size={20} color={colors.white} />
+              </>
+            )}
           </Pressable>
         </View>
       )}
@@ -143,10 +174,12 @@ export default function UnifiedLogin() {
               />
             ))}
           </View>
-          <Pressable style={styles.btn} onPress={verifyOtp}>
-            <Text style={styles.btnText}>Verify & Login</Text>
+          <Pressable style={[styles.btn, loading && { opacity: 0.6 }]} onPress={verifyOtp} disabled={loading}>
+            {loading ? <ActivityIndicator color={colors.white} /> : (
+              <Text style={styles.btnText}>Verify & Login</Text>
+            )}
           </Pressable>
-          <Pressable onPress={() => setOtpSent(false)}>
+          <Pressable onPress={() => { setOtpSent(false); setOtp(['', '', '', '', '', '']); }}>
             <Text style={styles.changePhone}>Change phone number</Text>
           </Pressable>
         </View>
@@ -158,7 +191,7 @@ export default function UnifiedLogin() {
           <View style={styles.infoBox}>
             <Ionicons name="medkit" size={16} color={colors.primary} />
             <Text style={styles.infoText}>
-              Doctors: use the credentials sent to your registered email after admin approval.
+              Doctors: use the credentials from your registered email after admin approval.
             </Text>
           </View>
 
@@ -190,16 +223,16 @@ export default function UnifiedLogin() {
             </Pressable>
           </View>
 
-          <Pressable style={styles.btn} onPress={doctorLogin}>
-            <Text style={styles.btnText}>Login</Text>
-            <Ionicons name="arrow-forward" size={20} color={colors.white} />
+          <Pressable style={[styles.btn, loading && { opacity: 0.6 }]} onPress={doctorLogin} disabled={loading}>
+            {loading ? <ActivityIndicator color={colors.white} /> : (
+              <>
+                <Text style={styles.btnText}>Login</Text>
+                <Ionicons name="arrow-forward" size={20} color={colors.white} />
+              </>
+            )}
           </Pressable>
         </View>
       )}
-
-      <Text style={styles.devHint}>
-        {mode === 'phone' ? 'Enter any 6 digits to continue' : 'Dev: doctor@healio.in / doctor123'}
-      </Text>
     </KeyboardAvoidingView>
   );
 }
@@ -216,7 +249,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 20 },
 
-  // Mode toggle
   modeToggle: {
     flexDirection: 'row', marginTop: spacing['2xl'],
     backgroundColor: colors.gray100, borderRadius: 14, padding: 4,
@@ -258,7 +290,6 @@ const styles = StyleSheet.create({
   otpBoxFilled: { borderColor: colors.primary, backgroundColor: '#e6f7f5' },
   changePhone: { textAlign: 'center', color: colors.textSecondary, fontSize: 13 },
 
-  // Email
   infoBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#e6f7f5', padding: 14, borderRadius: 12,
@@ -271,9 +302,4 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 10 },
   input: { flex: 1, fontSize: 15, color: colors.text },
   eyeBtn: { padding: spacing.sm },
-
-  devHint: {
-    textAlign: 'center', color: colors.gray400, fontSize: 11,
-    marginTop: spacing['2xl'],
-  },
 });

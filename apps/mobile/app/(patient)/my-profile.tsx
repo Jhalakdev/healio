@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
@@ -8,17 +8,28 @@ import { api } from '../../lib/api';
 export default function MyProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    await api('/users/me').then(setProfile).catch(() => {});
+  }, []);
 
   useEffect(() => {
-    api('/users/me').then(setProfile).catch(() => {}).finally(() => setLoading(false));
+    loadData().finally(() => setLoading(false));
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   const age = profile?.dob ? Math.floor((Date.now() - new Date(profile.dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}><Ionicons name="chevron-back" size={24} color={colors.text} /></Pressable>
         <Text style={styles.headerTitle}>Profile</Text>
@@ -29,6 +40,10 @@ export default function MyProfileScreen() {
         <View style={styles.avatar}><Text style={styles.avatarText}>{(profile?.name || 'U')[0]}</Text></View>
         <Text style={styles.name}>{profile?.name || 'Patient'}</Text>
         <Text style={styles.phone}>{profile?.user?.phone || profile?.user?.email || ''}</Text>
+        <Pressable style={styles.editBtn} onPress={() => router.push('/(patient)/edit-profile')}>
+          <Ionicons name="create-outline" size={16} color={colors.primary} />
+          <Text style={styles.editBtnText}>Edit Profile</Text>
+        </Pressable>
       </View>
 
       <View style={styles.statsRow}>
@@ -96,6 +111,8 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 32, fontWeight: '800', color: colors.white },
   name: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 14 },
   phone: { fontSize: 14, color: colors.gray500, marginTop: 4 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, backgroundColor: '#e6f7f5' },
+  editBtnText: { fontSize: 13, fontWeight: '600', color: colors.primary },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 20, marginTop: 24, gap: 10 },
   statCard: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, backgroundColor: '#fafafa', borderRadius: 14 },
   statIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

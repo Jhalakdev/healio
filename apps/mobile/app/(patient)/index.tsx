@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator,
+  View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,9 +16,16 @@ export default function PatientHome() {
   const [categories, setCategories] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
   }, []);
 
   const loadData = async () => {
@@ -60,7 +67,7 @@ export default function PatientHome() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -130,7 +137,7 @@ export default function PatientHome() {
         </View>
 
         {doctors.length > 0 ? doctors.map((doc: any) => (
-          <Pressable key={doc.id} style={styles.doctorCard} onPress={() => router.push('/(patient)/doctor-profile')}>
+          <Pressable key={doc.id} style={styles.doctorCard} onPress={() => router.push({ pathname: '/(patient)/doctor-profile', params: { doctorId: doc.id } })}>
             <View style={styles.docAvatarWrap}>
               <View style={styles.docAvatar}>
                 <Text style={styles.docAvatarText}>
@@ -149,7 +156,7 @@ export default function PatientHome() {
                 </Text>
               </View>
             </View>
-            <Pressable style={styles.bookNowBtn} onPress={() => router.push('/(patient)/doctor-profile')}>
+            <Pressable style={styles.bookNowBtn} onPress={() => router.push({ pathname: '/(patient)/doctor-profile', params: { doctorId: doc.id } })}>
               <Text style={styles.bookNowText}>Book Now</Text>
             </Pressable>
           </Pressable>

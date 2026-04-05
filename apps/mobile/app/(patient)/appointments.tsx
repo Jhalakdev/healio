@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { api } from '../../lib/api';
 
@@ -15,8 +16,15 @@ export default function AppointmentsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => { load(); }, [activeTab]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [activeTab]);
 
   const load = async () => {
     setLoading(true);
@@ -42,7 +50,7 @@ export default function AppointmentsScreen() {
       </View>
 
       {loading ? <ActivityIndicator style={{ marginTop: 40 }} size="large" color={colors.primary} /> : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.list}>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
           {bookings.map((apt: any) => (
             <View key={apt.id} style={styles.aptCard}>
               <View style={styles.aptAvatar}>
@@ -56,9 +64,17 @@ export default function AppointmentsScreen() {
                   <Text style={styles.aptTime}>{new Date(apt.scheduledAt).toLocaleString()}</Text>
                 </View>
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: (statusColors[apt.status] || '#64748b') + '15' }]}>
-                <View style={[styles.statusDot, { backgroundColor: statusColors[apt.status] || '#64748b' }]} />
-                <Text style={[styles.statusText, { color: statusColors[apt.status] || '#64748b' }]}>{apt.status}</Text>
+              <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                <View style={[styles.statusBadge, { backgroundColor: (statusColors[apt.status] || '#64748b') + '15' }]}>
+                  <View style={[styles.statusDot, { backgroundColor: statusColors[apt.status] || '#64748b' }]} />
+                  <Text style={[styles.statusText, { color: statusColors[apt.status] || '#64748b' }]}>{apt.status}</Text>
+                </View>
+                {apt.status === 'COMPLETED' && !apt.hasReview && (
+                  <Pressable style={styles.rateBtn} onPress={() => router.push({ pathname: '/(patient)/rate-doctor', params: { bookingId: apt.id, doctorName: apt.doctor?.name || 'Doctor' } })}>
+                    <Ionicons name="star-outline" size={12} color="#f59e0b" />
+                    <Text style={styles.rateBtnText}>Rate</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           ))}
@@ -97,4 +113,6 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 15, color: colors.gray400 },
+  rateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fef3c7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  rateBtnText: { fontSize: 11, fontWeight: '600', color: '#d97706' },
 });

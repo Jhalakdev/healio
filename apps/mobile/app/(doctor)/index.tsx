@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Switch, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Switch, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
@@ -15,13 +15,24 @@ export default function DoctorDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
+  const loadData = useCallback(async () => {
+    await Promise.all([
       api('/doctors/me/dashboard').then((d) => { setDashboard(d); setIsOnline(d?.isOnline || false); }).catch(() => {}),
       api('/doctors/me/bookings-by-date?range=today').then((d) => setBookings(d?.bookings || [])).catch(() => {}),
-    ]).finally(() => setLoading(false));
+    ]);
   }, []);
+
+  useEffect(() => {
+    loadData().finally(() => setLoading(false));
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   const toggleOnline = async (val: boolean) => {
     setIsOnline(val);
@@ -31,7 +42,7 @@ export default function DoctorDashboard() {
   if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0d9488" />}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}</Text>

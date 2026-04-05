@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   PanResponder,
   Dimensions,
   Alert,
+  ActivityIndicator,
+  TextInput,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../lib/theme';
+import { api } from '../../lib/api';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.55;
@@ -21,12 +24,54 @@ const SLIDER_WIDTH = SCREEN_WIDTH - 80;
 const THUMB_SIZE = 64;
 
 export default function BookingConfirmScreen() {
+  const { doctorId, slot, date } = useLocalSearchParams<{ doctorId: string; slot: string; date: string }>();
+
+  const [doctor, setDoctor] = useState<any>(null);
+  const [wallet, setWallet] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'gateway'>('wallet');
   const [confirmed, setConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState<any>(null);
+  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null); // null = self
+  const [symptoms, setSymptoms] = useState('');
   const slideX = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    Promise.all([
+      api(`/doctors/${doctorId}`).then(setDoctor).catch(() => null),
+      api('/wallet').then(setWallet).catch(() => null),
+      api('/users/me').then(setProfile).catch(() => null),
+    ]).finally(() => setLoading(false));
+  }, [doctorId]);
+
+  // Compute scheduled time from date + slot
+  const scheduledAt = (() => {
+    if (!date || !slot) return '';
+    const d = new Date(date);
+    // Parse slot like "02:00 PM"
+    const match = slot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (match) {
+      let hours = parseInt(match[1]);
+      const mins = parseInt(match[2]);
+      const ampm = match[3].toUpperCase();
+      if (ampm === 'PM' && hours !== 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      d.setHours(hours, mins, 0, 0);
+    }
+    return d.toISOString();
+  })();
+
+  const consultFee = Number(doctor?.consultationFee || 0);
+  const total = consultFee; // Backend applies coupon discount during booking
+  const balance = Number(wallet?.balance || 0);
+  const hasSufficientBalance = balance >= total;
+
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponder: () => !submitting,
     onPanResponderMove: (_, gesture) => {
       if (gesture.dx >= 0 && gesture.dx <= SLIDER_WIDTH - THUMB_SIZE) {
         slideX.setValue(gesture.dx);
@@ -37,10 +82,7 @@ export default function BookingConfirmScreen() {
         Animated.spring(slideX, {
           toValue: SLIDER_WIDTH - THUMB_SIZE,
           useNativeDriver: false,
-        }).start(() => {
-          setConfirmed(true);
-          setTimeout(() => router.push('/(patient)/booking-success'), 300);
-        });
+        }).start(() => handleBooking());
       } else {
         Animated.spring(slideX, {
           toValue: 0,
@@ -50,7 +92,45 @@ export default function BookingConfirmScreen() {
     },
   });
 
-  // Interpolate opacity for the text
+  const handleBooking = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const body: any = {
+        mode: 'SCHEDULED',
+        doctorId,
+        scheduledAt,
+        symptoms: symptoms || undefined,
+        couponCode: couponApplied ? couponCode : undefined,
+        forMemberId: selectedMember?.id || undefined,
+      };
+
+      const booking = await api('/bookings', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+
+      setConfirmed(true);
+      setTimeout(() => {
+        router.push({
+          pathname: '/(patient)/booking-success',
+          params: {
+            bookingId: booking.id,
+            doctorName: doctor?.name || 'Doctor',
+            scheduledAt,
+            amount: String(booking.finalAmount || booking.grossAmount || total),
+            paymentMethod,
+            patientName: selectedMember?.name || profile?.name || 'You',
+          },
+        });
+      }, 300);
+    } catch (err: any) {
+      Alert.alert('Booking Failed', err.message || 'Something went wrong');
+      Animated.spring(slideX, { toValue: 0, useNativeDriver: false }).start();
+    }
+    setSubmitting(false);
+  };
+
   const textOpacity = slideX.interpolate({
     inputRange: [0, SLIDER_WIDTH * 0.4],
     outputRange: [1, 0],
@@ -63,9 +143,21 @@ export default function BookingConfirmScreen() {
     extrapolate: 'clamp',
   });
 
+  if (loading) return <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.primary} /></View>;
+  if (!doctor) return <View style={styles.loadingWrap}><Text style={{ color: colors.gray400 }}>Doctor not found</Text></View>;
+
+  const dateObj = new Date(scheduledAt);
+  const dateStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const endTime = new Date(dateObj.getTime() + 15 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const initials = doctor.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'D';
+  const categories = doctor.categories?.map((c: any) => c.category?.name).filter(Boolean) || [doctor.specialization || 'General'];
+
+  const patientName = selectedMember?.name || profile?.name || 'You';
+  const patientInitials = patientName.split(' ').map((n: string) => n[0]).join('').slice(0, 2);
+
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -78,29 +170,30 @@ export default function BookingConfirmScreen() {
         {/* Doctor card */}
         <View style={styles.doctorCard}>
           <View style={styles.docAvatar}>
-            <Text style={styles.docAvatarText}>PS</Text>
-            <View style={styles.onlineDot} />
+            <Text style={styles.docAvatarText}>{initials}</Text>
+            {doctor.isOnline && <View style={styles.onlineDot} />}
           </View>
           <View style={styles.docInfo}>
-            <Text style={styles.docName}>Dr. Priya Sharma</Text>
-            <Text style={styles.docSpec}>General Medicine</Text>
+            <Text style={styles.docName}>{doctor.name}</Text>
+            <Text style={styles.docSpec}>{categories[0]}</Text>
             <View style={styles.docRating}>
               <Ionicons name="star" size={12} color="#f59e0b" />
-              <Text style={styles.ratingText}>4.9 (2,530 reviews)</Text>
+              <Text style={styles.ratingText}>{doctor.avgRating?.toFixed(1) || 'New'} ({doctor.totalReviews || 0} reviews)</Text>
             </View>
           </View>
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={14} color="#10b981" />
-          </View>
+          {doctor.isVerified && (
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="shield-checkmark" size={14} color="#10b981" />
+            </View>
+          )}
         </View>
 
         {/* Booking details */}
         <View style={styles.detailsCard}>
           <Text style={styles.sectionTitle}>Booking Details</Text>
-
           {[
-            { icon: 'calendar-outline' as const, label: 'Date', value: 'Mon, 15 Oct 2025' },
-            { icon: 'time-outline' as const, label: 'Time', value: '2:00 PM — 2:15 PM' },
+            { icon: 'calendar-outline' as const, label: 'Date', value: dateStr },
+            { icon: 'time-outline' as const, label: 'Time', value: `${timeStr} — ${endTime}` },
             { icon: 'hourglass-outline' as const, label: 'Duration', value: '15 minutes' },
             { icon: 'videocam-outline' as const, label: 'Type', value: 'Video Consultation' },
           ].map((item) => (
@@ -114,25 +207,40 @@ export default function BookingConfirmScreen() {
           ))}
         </View>
 
-        {/* For whom */}
+        {/* Patient Details */}
         <View style={styles.detailsCard}>
           <Text style={styles.sectionTitle}>Patient Details</Text>
           <View style={styles.patientRow}>
             <View style={[styles.patientAvatar, { backgroundColor: '#7c3aed20' }]}>
-              <Text style={{ color: '#7c3aed', fontWeight: '800', fontSize: 16 }}>MW</Text>
+              <Text style={{ color: '#7c3aed', fontWeight: '800', fontSize: 16 }}>{patientInitials}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.patientName}>Mrs. Williamson</Text>
-              <Text style={styles.patientMeta}>Spouse · 29 yrs · Female</Text>
+              <Text style={styles.patientName}>{patientName}</Text>
+              <Text style={styles.patientMeta}>{selectedMember ? `${selectedMember.relation} · ${selectedMember.gender || ''}` : 'Self'}</Text>
             </View>
-            <Pressable style={styles.changeBtn}>
-              <Text style={styles.changeBtnText}>Change</Text>
-            </Pressable>
+            {profile?.familyMembers?.length > 0 && (
+              <Pressable style={styles.changeBtn} onPress={() => {
+                const members = [{ id: null, name: profile.name, relation: 'Self' }, ...(profile.familyMembers || [])];
+                Alert.alert('Select Patient', '', members.map((m: any) => ({
+                  text: m.id ? `${m.name} (${m.relation})` : 'Self',
+                  onPress: () => setSelectedMember(m.id ? m : null),
+                })));
+              }}>
+                <Text style={styles.changeBtnText}>Change</Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.symptomsBox}>
             <Text style={styles.symptomsLabel}>Symptoms / Reason</Text>
-            <Text style={styles.symptomsText}>Persistent headache, mild fever for 3 days</Text>
+            <TextInput
+              style={styles.symptomsInput}
+              placeholder="Describe your symptoms..."
+              placeholderTextColor={colors.gray400}
+              value={symptoms}
+              onChangeText={setSymptoms}
+              multiline
+            />
           </View>
         </View>
 
@@ -140,7 +248,6 @@ export default function BookingConfirmScreen() {
         <View style={styles.detailsCard}>
           <Text style={styles.sectionTitle}>Payment</Text>
 
-          {/* Wallet toggle */}
           <Pressable
             style={[styles.paymentOption, paymentMethod === 'wallet' && styles.paymentOptionActive]}
             onPress={() => setPaymentMethod('wallet')}
@@ -154,13 +261,20 @@ export default function BookingConfirmScreen() {
               </View>
               <View>
                 <Text style={styles.paymentLabel}>Healio Wallet</Text>
-                <Text style={styles.paymentSub}>Balance: ₹2,000</Text>
+                <Text style={styles.paymentSub}>Balance: ₹{balance.toLocaleString('en-IN')}</Text>
               </View>
             </View>
-            <View style={styles.sufficientBadge}>
-              <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-              <Text style={styles.sufficientText}>Sufficient</Text>
-            </View>
+            {hasSufficientBalance ? (
+              <View style={styles.sufficientBadge}>
+                <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                <Text style={styles.sufficientText}>Sufficient</Text>
+              </View>
+            ) : (
+              <View style={[styles.sufficientBadge, { backgroundColor: '#fef2f2' }]}>
+                <Ionicons name="alert-circle" size={14} color="#ef4444" />
+                <Text style={[styles.sufficientText, { color: '#ef4444' }]}>Low</Text>
+              </View>
+            )}
           </Pressable>
 
           <Pressable
@@ -176,38 +290,56 @@ export default function BookingConfirmScreen() {
               </View>
               <View>
                 <Text style={styles.paymentLabel}>Pay Online</Text>
-                <Text style={styles.paymentSub}>UPI, Card, Net Banking</Text>
+                <Text style={styles.paymentSub}>UPI · Wallet</Text>
               </View>
             </View>
           </Pressable>
 
           {/* Coupon */}
-          <Pressable style={styles.couponRow}>
-            <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
-            <Text style={styles.couponText}>Apply Coupon Code</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
-          </Pressable>
+          {!showCouponInput ? (
+            <Pressable style={styles.couponRow} onPress={() => setShowCouponInput(true)}>
+              <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
+              <Text style={styles.couponText}>{couponApplied ? `Coupon Applied: ${couponCode}` : 'Apply Coupon Code'}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+            </Pressable>
+          ) : (
+            <View style={styles.couponInputRow}>
+              <TextInput
+                style={styles.couponInput}
+                placeholder="Enter coupon code"
+                placeholderTextColor={colors.gray400}
+                value={couponCode}
+                onChangeText={setCouponCode}
+                autoCapitalize="characters"
+              />
+              <Pressable style={styles.couponApplyBtn} onPress={() => {
+                if (!couponCode) return;
+                setCouponApplied({ code: couponCode });
+                setShowCouponInput(false);
+              }}>
+                <Text style={{ color: colors.white, fontWeight: '700', fontSize: 13 }}>Apply</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Price breakdown */}
         <View style={styles.detailsCard}>
           <Text style={styles.sectionTitle}>Price Summary</Text>
-          {[
-            { label: 'Consultation Fee', value: '₹500.00' },
-            { label: 'Child Discount (10%)', value: '-₹0.00', green: false },
-            { label: 'Coupon (WELCOME50)', value: '-₹50.00', green: true },
-          ].map((item) => (
-            <View key={item.label} style={styles.priceRow}>
-              <Text style={styles.priceLabel}>{item.label}</Text>
-              <Text style={[styles.priceValue, item.green && styles.priceGreen]}>
-                {item.value}
-              </Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>Consultation Fee</Text>
+            <Text style={styles.priceValue}>₹{consultFee.toLocaleString('en-IN')}</Text>
+          </View>
+          {couponApplied && (
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Coupon ({couponCode})</Text>
+              <Text style={[styles.priceValue, styles.priceGreen]}>Applied at checkout</Text>
             </View>
-          ))}
+          )}
           <View style={styles.totalDivider} />
           <View style={styles.priceRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>₹450.00</Text>
+            <Text style={styles.totalValue}>₹{total.toLocaleString('en-IN')}</Text>
           </View>
         </View>
       </ScrollView>
@@ -215,13 +347,13 @@ export default function BookingConfirmScreen() {
       {/* Swipe to confirm */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomInfo}>
-          <Text style={styles.bottomTotal}>₹450</Text>
-          <Text style={styles.bottomSub}>via {paymentMethod === 'wallet' ? 'Wallet' : 'Online Payment'}</Text>
+          <Text style={styles.bottomTotal}>₹{total}</Text>
+          <Text style={styles.bottomSub}>via {paymentMethod === 'wallet' ? 'Wallet' : 'Online'}</Text>
         </View>
 
         <Animated.View style={[styles.slider, { backgroundColor: bgColor }]}>
           <Animated.Text style={[styles.slideText, { opacity: textOpacity }]}>
-            Swipe to Confirm →
+            {submitting ? 'Booking...' : 'Swipe to Confirm →'}
           </Animated.Text>
           <Animated.View
             style={[styles.thumb, { transform: [{ translateX: slideX }] }]}
@@ -246,13 +378,13 @@ export default function BookingConfirmScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
 
-  // Doctor
   doctorCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     marginHorizontal: 20, backgroundColor: colors.white, borderRadius: 18,
@@ -278,7 +410,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  // Details
   detailsCard: {
     marginHorizontal: 20, backgroundColor: colors.white, borderRadius: 18,
     padding: 18, marginBottom: 12,
@@ -295,7 +426,6 @@ const styles = StyleSheet.create({
   detailLabel: { flex: 1, fontSize: 13, color: colors.gray500 },
   detailValue: { fontSize: 13, fontWeight: '600', color: colors.text },
 
-  // Patient
   patientRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   patientAvatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   patientName: { fontSize: 15, fontWeight: '700', color: colors.text },
@@ -307,9 +437,8 @@ const styles = StyleSheet.create({
   changeBtnText: { fontSize: 12, fontWeight: '600', color: colors.primary },
   symptomsBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 12 },
   symptomsLabel: { fontSize: 11, fontWeight: '600', color: colors.gray400, marginBottom: 4 },
-  symptomsText: { fontSize: 13, color: colors.text, lineHeight: 20 },
+  symptomsInput: { fontSize: 13, color: colors.text, lineHeight: 20, minHeight: 40 },
 
-  // Payment
   paymentOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 14, borderRadius: 14, backgroundColor: '#f8fafc',
@@ -339,8 +468,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#f5f5f5', marginTop: 4,
   },
   couponText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.primary },
+  couponInputRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f5f5f5', marginTop: 4,
+  },
+  couponInput: {
+    flex: 1, height: 42, borderRadius: 10, backgroundColor: '#f8fafc',
+    paddingHorizontal: 14, fontSize: 14, color: colors.text,
+  },
+  couponApplyBtn: {
+    height: 42, paddingHorizontal: 18, borderRadius: 10,
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
 
-  // Price
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
   priceLabel: { fontSize: 13, color: colors.gray500 },
   priceValue: { fontSize: 13, fontWeight: '600', color: colors.text },
@@ -349,7 +489,6 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 16, fontWeight: '800', color: colors.text },
   totalValue: { fontSize: 18, fontWeight: '800', color: colors.primary },
 
-  // Bottom swipe bar
   bottomBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     paddingHorizontal: 20, paddingTop: 14, paddingBottom: 38,

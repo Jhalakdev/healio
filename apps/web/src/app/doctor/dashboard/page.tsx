@@ -37,6 +37,7 @@ export default function DoctorDashboardHome() {
   const [exp, setExp] = useState("");
   const [maxSess, setMaxSess] = useState("20");
   const [selCats, setSelCats] = useState<string[]>([]);
+  const [qualifications, setQualifications] = useState("");
 
   // Photo
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export default function DoctorDashboardHome() {
         setStep(p.onboardingStep || 0);
         setName(p.name || ""); setBio(p.bio || "");
         setExp(String(p.experience || "")); setMaxSess(String(p.maxSessionsPerDay || 20));
+        setQualifications((p.qualifications || []).join(', ') || p.qualification || '');
         setSelCats((p.categories || []).map((c: any) => c.categoryId));
         setPhotoSrc(p.avatarUrl || null);
       }).catch(() => {}),
@@ -88,7 +90,7 @@ export default function DoctorDashboardHome() {
   const saveProfile = async () => {
     setSaving(true); setError("");
     try {
-      await adminApi("/doctors/me", { method: "PATCH", body: JSON.stringify({ name, bio, experience: Number(exp) || undefined, maxSessionsPerDay: Number(maxSess) || 20 }) });
+      await adminApi("/doctors/me", { method: "PATCH", body: JSON.stringify({ name, bio, experience: Number(exp) || undefined, maxSessionsPerDay: Number(maxSess) || 20, qualification: qualifications }) });
       await go(2); // profile done → go to specializations
     } catch (e: any) { setError(e.message || "Failed to save profile"); }
     setSaving(false);
@@ -265,6 +267,8 @@ export default function DoctorDashboardHome() {
             <div className="space-y-5">
               <div><label className="text-sm font-semibold text-slate-300 mb-2 block">Full Name *</label>
               <Input className="h-12 text-base" placeholder="Dr. Priya Sharma" value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div><label className="text-sm font-semibold text-slate-300 mb-2 block">Qualifications *</label>
+              <Input className="h-12 text-base" placeholder="MBBS, MD, DNB (comma separated)" value={qualifications} onChange={(e) => setQualifications(e.target.value)} /></div>
               <div><label className="text-sm font-semibold text-slate-300 mb-2 block">About You</label>
               <textarea className="w-full p-4 rounded-xl border text-base min-h-[100px]" placeholder="Your experience..." value={bio} onChange={(e) => setBio(e.target.value)} /></div>
               <div className="grid grid-cols-2 gap-4">

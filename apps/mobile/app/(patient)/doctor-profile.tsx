@@ -1,45 +1,91 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
 import { api } from '../../lib/api';
 
 type TimeOfDay = 'Morning' | 'Afternoon' | 'Evening';
 
-const defaultSlots = {
-  Morning: ['09:00 AM', '09:15 AM', '09:30 AM', '09:45 AM', '10:00 AM', '10:15 AM', '10:30 AM', '10:45 AM', '11:00 AM', '11:15 AM', '11:30 AM', '11:45 AM'],
-  Afternoon: ['12:00 PM', '12:15 PM', '12:30 PM', '12:45 PM', '01:00 PM', '01:15 PM', '01:30 PM', '02:00 PM', '02:15 PM', '02:30 PM', '02:45 PM', '03:00 PM'],
-  Evening: ['04:00 PM', '04:15 PM', '04:30 PM', '04:45 PM', '05:00 PM', '05:15 PM', '05:30 PM', '05:45 PM', '06:00 PM', '06:15 PM', '06:30 PM'],
-};
+function categorizeSlot(startTime: string): TimeOfDay {
+  const hour = parseInt(startTime.split(':')[0]);
+  if (hour < 12) return 'Morning';
+  if (hour < 16) return 'Afternoon';
+  return 'Evening';
+}
+
+function formatTime(time24: string): string {
+  const [h, m] = time24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+}
 
 export default function DoctorProfileScreen() {
+  const { doctorId: paramDoctorId } = useLocalSearchParams<{ doctorId: string }>();
   const [doctor, setDoctor] = useState<any>(null);
   const [reviews, setReviews] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<TimeOfDay>('Afternoon');
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<TimeOfDay>('Morning');
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [isFavourite, setIsFavourite] = useState(false);
   const [tab, setTab] = useState<'about' | 'reviews'>('about');
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
-  useEffect(() => {
-    loadDoctor();
-  }, []);
+  // Generate dates for next 7 days
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return { day: d.getDate(), label: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()], date: d };
+  });
+  const [selectedDate, setSelectedDate] = useState(0); // index into dates array
 
-  const loadDoctor = async () => {
+  const loadDoctor = useCallback(async () => {
     try {
-      // Get first doctor for now — in production, pass doctor ID via route params
-      const doctors = await api('/doctors');
-      if (doctors?.length > 0) {
-        setDoctor(doctors[0]);
-        // Load reviews
+      let doc: any;
+      if (paramDoctorId) {
+        doc = await api(`/doctors/${paramDoctorId}`);
+      } else {
+        const doctors = await api('/doctors');
+        doc = doctors?.[0];
+      }
+      if (doc) {
+        setDoctor(doc);
         try {
-          const rev = await api(`/reviews/doctor/${doctors[0].id}`);
+          const rev = await api(`/reviews/doctor/${doc.id}`);
           setReviews(rev);
         } catch {}
       }
     } catch {}
     setLoading(false);
+  }, [paramDoctorId]);
+
+  const loadSlots = useCallback(async (dateIndex: number) => {
+    if (!doctor?.id) return;
+    setSlotsLoading(true);
+    try {
+      const dateStr = dates[dateIndex].date.toISOString().split('T')[0];
+      const slots = await api(`/doctors/${doctor.id}/availability?date=${dateStr}&timezone=Asia/Kolkata`);
+      setAvailableSlots(Array.isArray(slots) ? slots : []);
+    } catch {
+      setAvailableSlots([]);
+    }
+    setSlotsLoading(false);
+  }, [doctor?.id]);
+
+  useEffect(() => { loadDoctor(); }, [loadDoctor]);
+
+  useEffect(() => {
+    if (doctor?.id) loadSlots(selectedDate);
+  }, [doctor?.id, selectedDate, loadSlots]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadDoctor();
+    if (doctor?.id) await loadSlots(selectedDate);
+    setRefreshing(false);
   };
 
   const toggleFav = async () => {
@@ -55,17 +101,24 @@ export default function DoctorProfileScreen() {
 
   const categories = doctor.categories?.map((c: any) => c.category?.name).filter(Boolean) || [doctor.specialization || 'General'];
 
-  // Generate dates for next 7 days
-  const dates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return { day: d.getDate(), label: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()], date: d };
+  // Group available slots by time of day
+  const slotsByTime: Record<TimeOfDay, { time: string; available: boolean }[]> = {
+    Morning: [], Afternoon: [], Evening: [],
+  };
+  availableSlots.forEach((s: any) => {
+    const cat = categorizeSlot(s.startTime);
+    slotsByTime[cat].push({ time: formatTime(s.startTime), available: s.available !== false });
   });
-  const [selectedDate, setSelectedDate] = useState(dates[0].day);
+
+  // Auto-select first time of day that has slots
+  const activeSlots = slotsByTime[selectedTimeOfDay];
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}><Ionicons name="chevron-back" size={24} color={colors.text} /></Pressable>
           <Text style={styles.headerTitle}>Doctor Profile</Text>
@@ -77,14 +130,14 @@ export default function DoctorProfileScreen() {
         {/* Doctor info */}
         <View style={styles.doctorSection}>
           <View style={styles.docAvatar}>
-            <Text style={styles.docAvatarText}>{doctor.name?.split(' ').slice(1).map((n: string) => n[0]).join('').slice(0, 2) || 'D'}</Text>
+            <Text style={styles.docAvatarText}>{doctor.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'D'}</Text>
             {doctor.isOnline && <View style={styles.onlineBadge} />}
           </View>
           <Text style={styles.docName}>{doctor.name}</Text>
-          <Text style={styles.docQualif}>{(doctor.qualifications || [doctor.qualification]).filter(Boolean).join(', ') || 'MBBS'}</Text>
+          <Text style={styles.docQualif}>{(doctor.qualifications || [doctor.qualification]).filter(Boolean).join(', ') || ''}</Text>
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={14} color="#f59e0b" />
-            <Text style={styles.ratingText}>{reviews?.stats?.averageRating || 0} ({reviews?.stats?.totalReviews || 0} reviews)</Text>
+            <Text style={styles.ratingText}>{reviews?.stats?.averageRating?.toFixed(1) || 'New'} ({reviews?.stats?.totalReviews || 0} reviews)</Text>
           </View>
           <View style={styles.tagsRow}>
             {categories.map((tag: string) => (
@@ -104,12 +157,12 @@ export default function DoctorProfileScreen() {
             <Text style={styles.statLabel}>Experience</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{reviews?.stats?.averageRating || 0}</Text>
+            <Text style={styles.statValue}>{reviews?.stats?.averageRating?.toFixed(1) || 'New'}</Text>
             <Text style={styles.statLabel}>Rating</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{doctor.avgResponseMin ? `${doctor.avgResponseMin}m` : '< 5m'}</Text>
-            <Text style={styles.statLabel}>Response</Text>
+            <Text style={styles.statValue}>₹{Number(doctor.consultationFee || 0)}</Text>
+            <Text style={styles.statLabel}>Fee</Text>
           </View>
         </View>
 
@@ -137,10 +190,10 @@ export default function DoctorProfileScreen() {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Schedule</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                {dates.map((d) => (
-                  <Pressable key={d.day} style={[styles.dateCard, selectedDate === d.day && styles.dateCardActive]} onPress={() => setSelectedDate(d.day)}>
-                    <Text style={[styles.dateNum, selectedDate === d.day && styles.dateNumActive]}>{d.day}</Text>
-                    <Text style={[styles.dateLabel, selectedDate === d.day && styles.dateLabelActive]}>{d.label}</Text>
+                {dates.map((d, idx) => (
+                  <Pressable key={idx} style={[styles.dateCard, selectedDate === idx && styles.dateCardActive]} onPress={() => { setSelectedDate(idx); setSelectedSlot(null); }}>
+                    <Text style={[styles.dateNum, selectedDate === idx && styles.dateNumActive]}>{d.day}</Text>
+                    <Text style={[styles.dateLabel, selectedDate === idx && styles.dateLabelActive]}>{d.label}</Text>
                   </Pressable>
                 ))}
               </ScrollView>
@@ -148,18 +201,31 @@ export default function DoctorProfileScreen() {
               <View style={styles.timeTabs}>
                 {(['Morning', 'Afternoon', 'Evening'] as TimeOfDay[]).map((tod) => (
                   <Pressable key={tod} style={[styles.timeTab, selectedTimeOfDay === tod && styles.timeTabActive]} onPress={() => setSelectedTimeOfDay(tod)}>
-                    <Text style={[styles.timeTabText, selectedTimeOfDay === tod && styles.timeTabTextActive]}>{tod}</Text>
+                    <Text style={[styles.timeTabText, selectedTimeOfDay === tod && styles.timeTabTextActive]}>
+                      {tod} ({slotsByTime[tod].filter(s => s.available).length})
+                    </Text>
                   </Pressable>
                 ))}
               </View>
 
-              <View style={styles.slotsRow}>
-                {defaultSlots[selectedTimeOfDay].map((slot) => (
-                  <Pressable key={slot} style={[styles.slotChip, selectedSlot === slot && styles.slotChipActive]} onPress={() => setSelectedSlot(slot)}>
-                    <Text style={[styles.slotText, selectedSlot === slot && styles.slotTextActive]}>{slot}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              {slotsLoading ? (
+                <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
+              ) : activeSlots.length > 0 ? (
+                <View style={styles.slotsRow}>
+                  {activeSlots.map((slot) => (
+                    <Pressable
+                      key={slot.time}
+                      style={[styles.slotChip, selectedSlot === slot.time && styles.slotChipActive, !slot.available && styles.slotChipDisabled]}
+                      onPress={() => slot.available && setSelectedSlot(slot.time)}
+                      disabled={!slot.available}
+                    >
+                      <Text style={[styles.slotText, selectedSlot === slot.time && styles.slotTextActive, !slot.available && styles.slotTextDisabled]}>{slot.time}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Text style={{ textAlign: 'center', color: colors.gray400, padding: 20 }}>No slots available for this period</Text>
+              )}
             </View>
           </View>
         ) : (
@@ -192,9 +258,13 @@ export default function DoctorProfileScreen() {
 
       {/* Bottom CTA */}
       <View style={styles.bottomBar}>
-        <Pressable style={styles.bookBtn} onPress={() => router.push('/(patient)/booking-confirm')}>
+        <Pressable style={[styles.bookBtn, !selectedSlot && { opacity: 0.5 }]} onPress={() => {
+          if (!selectedSlot) return;
+          const selDate = dates[selectedDate];
+          router.push({ pathname: '/(patient)/booking-confirm', params: { doctorId: doctor.id, slot: selectedSlot, date: selDate?.date?.toISOString() || '' } });
+        }}>
           <Ionicons name="videocam" size={20} color={colors.white} />
-          <Text style={styles.bookBtnText}>Book Appointment</Text>
+          <Text style={styles.bookBtnText}>{selectedSlot ? 'Book Appointment' : 'Select a Time Slot'}</Text>
         </Pressable>
       </View>
     </View>
@@ -241,13 +311,15 @@ const styles = StyleSheet.create({
   timeTabs: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 14, padding: 4, marginBottom: 12 },
   timeTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
   timeTabActive: { backgroundColor: colors.primary },
-  timeTabText: { fontSize: 13, fontWeight: '600', color: colors.gray400 },
+  timeTabText: { fontSize: 12, fontWeight: '600', color: colors.gray400 },
   timeTabTextActive: { color: colors.white },
   slotsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slotChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0' },
   slotChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  slotChipDisabled: { backgroundColor: '#f1f5f9', borderColor: '#e2e8f0', opacity: 0.4 },
   slotText: { fontSize: 13, fontWeight: '600', color: colors.gray600 },
   slotTextActive: { color: colors.white },
+  slotTextDisabled: { color: colors.gray400 },
   reviewCard: { backgroundColor: '#fafafa', borderRadius: 16, padding: 16 },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   reviewAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gray200, alignItems: 'center', justifyContent: 'center' },

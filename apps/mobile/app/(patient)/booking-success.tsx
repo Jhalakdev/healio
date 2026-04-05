@@ -1,11 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../lib/theme';
 
 export default function BookingSuccessScreen() {
+  const { bookingId, doctorName, scheduledAt, amount, paymentMethod, patientName } =
+    useLocalSearchParams<{
+      bookingId: string;
+      doctorName: string;
+      scheduledAt: string;
+      amount: string;
+      paymentMethod: string;
+      patientName: string;
+    }>();
+
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const confettiAnim = useRef(new Animated.Value(0)).current;
@@ -32,6 +42,10 @@ export default function BookingSuccessScreen() {
       ]),
     ]).start();
   }, []);
+
+  const dateObj = scheduledAt ? new Date(scheduledAt) : new Date();
+  const dateStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <View style={styles.container}>
@@ -69,31 +83,35 @@ export default function BookingSuccessScreen() {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         <Text style={styles.title}>Booking Confirmed!</Text>
         <Text style={styles.subtitle}>
-          Your consultation with Dr. Priya Sharma has been booked successfully.
+          Your consultation with {doctorName || 'the doctor'} has been booked successfully.
         </Text>
 
         {/* Booking summary card */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Ionicons name="calendar" size={16} color={colors.primary} />
-            <Text style={styles.summaryText}>Mon, 15 Oct 2025 at 2:00 PM</Text>
+            <Text style={styles.summaryText}>{dateStr} at {timeStr}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Ionicons name="person" size={16} color={colors.primary} />
-            <Text style={styles.summaryText}>Mrs. Williamson</Text>
+            <Text style={styles.summaryText}>{patientName || 'You'}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Ionicons name="wallet" size={16} color={colors.primary} />
-            <Text style={styles.summaryText}>₹450 paid via Wallet</Text>
+            <Text style={styles.summaryText}>₹{Number(amount || 0).toLocaleString('en-IN')} paid via {paymentMethod === 'wallet' ? 'Wallet' : 'Online'}</Text>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <Ionicons name="receipt" size={16} color={colors.primary} />
-            <Text style={styles.summaryLabel}>Booking ID:</Text>
-            <Text style={styles.bookingId}>HLO-2025-4829</Text>
-          </View>
+          {bookingId && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.summaryRow}>
+                <Ionicons name="receipt" size={16} color={colors.primary} />
+                <Text style={styles.summaryLabel}>Booking ID:</Text>
+                <Text style={styles.bookingId}>{bookingId.slice(0, 8).toUpperCase()}</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* What's next */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Clock, IndianRupee, Calendar, FileText, Bell } from "lucide-react";
+import { Save, Clock, IndianRupee, Calendar, FileText, Bell, Wallet, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ const configKeys = [
   { key: "doctor_reply_deadline_hours", label: "Doctor Reply Deadline (hours)", icon: Clock, type: "number" },
   { key: "min_call_duration_for_charge", label: "Min Call Duration for Charge (seconds)", icon: Clock, type: "number" },
   { key: "max_reschedule_count", label: "Max Reschedules per Booking", icon: Calendar, type: "number" },
+  { key: "default_consultation_duration_minutes", label: "Consultation Duration (minutes)", icon: Timer, type: "number" },
+  { key: "max_wallet_balance", label: "Max Wallet Balance (₹)", icon: Wallet, type: "number" },
 ];
 
 export default function AdminSettingsPage() {

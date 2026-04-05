@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { DoctorsService } from '../doctors/doctors.service';
 import { PlansService } from '../plans/plans.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RescheduleBookingDto } from './dto/reschedule-booking.dto';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -26,6 +27,7 @@ export class BookingsService {
     private plansService: PlansService,
     @InjectQueue('booking') private bookingQueue: Queue,
     @InjectQueue('refund') private refundQueue: Queue,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createBooking(patientUserId: string, dto: CreateBookingDto) {
@@ -195,6 +197,20 @@ export class BookingsService {
         },
       });
     });
+
+    // Notify doctor about new booking
+    try {
+      const doctorUserId = booking.doctor?.userId || (await this.prisma.doctor.findUnique({ where: { id: booking.doctorId }, select: { userId: true } }))?.userId;
+      if (doctorUserId) {
+        await this.notificationsService.create({
+          userId: doctorUserId,
+          type: 'booking',
+          title: 'New Booking!',
+          body: `${patient.name || 'A patient'} has booked a consultation${dto.scheduledAt ? ` for ${new Date(dto.scheduledAt).toLocaleString('en-IN')}` : ''}`,
+          data: { bookingId: booking.id },
+        });
+      }
+    } catch {}
 
     // Schedule auto-cancel if doctor doesn't accept (instant only)
     if (dto.mode === 'INSTANT') {

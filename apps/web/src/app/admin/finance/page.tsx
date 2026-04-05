@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IndianRupee, TrendingUp, Percent } from "lucide-react";
+import { IndianRupee, TrendingUp, Percent, Banknote } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,11 @@ export default function AdminFinancePage() {
   const [commission, setCommission] = useState(30);
   const [newCommission, setNewCommission] = useState("30");
   const [dashboard, setDashboard] = useState<any>({});
+  const [payouts, setPayouts] = useState<any[]>([]);
 
   useEffect(() => {
     adminApi("/admin/dashboard").then(setDashboard).catch(console.error);
+    adminApi("/admin/payouts").then((d) => setPayouts(Array.isArray(d) ? d : [])).catch(() => {});
     adminApi("/admin/commission").then((d) => {
       setCommission(d.commissionPercent);
       setNewCommission(String(d.commissionPercent));
@@ -77,6 +80,45 @@ export default function AdminFinancePage() {
             <span className="text-slate-400">%</span>
             <Button onClick={updateCommission}>Update</Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Payouts Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Banknote className="w-5 h-5" /> Doctor Payouts</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {payouts.length === 0 ? (
+            <p className="text-sm text-slate-500">No payouts yet. Payouts are processed weekly (Fridays) via Razorpay.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700/50">
+                    <th className="text-left py-3 px-2 font-semibold text-slate-400">Doctor</th>
+                    <th className="text-left py-3 px-2 font-semibold text-slate-400">Period</th>
+                    <th className="text-right py-3 px-2 font-semibold text-slate-400">Amount</th>
+                    <th className="text-center py-3 px-2 font-semibold text-slate-400">Bookings</th>
+                    <th className="text-center py-3 px-2 font-semibold text-slate-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payouts.map((p: any) => (
+                    <tr key={p.id} className="border-b border-slate-800/30">
+                      <td className="py-3 px-2 font-medium">{p.doctor?.name || 'Doctor'}</td>
+                      <td className="py-3 px-2 text-slate-400">{new Date(p.periodStart).toLocaleDateString()} — {new Date(p.periodEnd).toLocaleDateString()}</td>
+                      <td className="py-3 px-2 text-right font-bold text-emerald-400">₹{Number(p.amount).toLocaleString('en-IN')}</td>
+                      <td className="py-3 px-2 text-center">{p.bookingCount}</td>
+                      <td className="py-3 px-2 text-center">
+                        <Badge variant={p.status === 'PAID' ? 'default' : 'secondary'}>{p.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
